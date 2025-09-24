@@ -1,0 +1,352 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 14px;
+  
+  /* Financial Platform Color Palette - Green, Orange, White */
+  --primary-green: #22C55E;
+  --primary-orange: #F97316;
+  --primary-white: #FFFFFF;
+  --light-green: #DCFCE7;
+  --light-orange: #FED7AA;
+  --dark-green: #16A34A;
+  --dark-orange: #EA580C;
+  --neutral-gray: #F8FAFC;
+  --border-gray: #E2E8F0;
+  --text-gray: #64748B;
+  --text-dark: #1E293B;
+  --success: #22C55E;
+  --warning: #F97316;
+  --error: #EF4444;
+  --info: #3B82F6;
+  
+  /* Updated theme variables */
+  --background: #FFFFFF;
+  --foreground: #1E293B;
+  --card: #FFFFFF;
+  --card-foreground: #1E293B;
+  --popover: #FFFFFF;
+  --popover-foreground: #1E293B;
+  --primary: #22C55E;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F8FAFC;
+  --secondary-foreground: #1E293B;
+  --muted: #F8FAFC;
+  --muted-foreground: #64748B;
+  --accent: #F97316;
+  --accent-foreground: #FFFFFF;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #22C55E;
+  --input: #FFFFFF;
+  --input-background: #FFFFFF;
+  --switch-background: #E2E8F0;
+  --font-weight-medium: 600;
+  --font-weight-normal: 400;
+  --ring: #22C55E;
+  
+  /* Chart colors using green/orange theme */
+  --chart-1: #22C55E;
+  --chart-2: #F97316;
+  --chart-3: #64748B;
+  --chart-4: #3B82F6;
+  --chart-5: #EF4444;
+  
+  --radius: 0.75rem;
+  
+  /* Sidebar colors */
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1E293B;
+  --sidebar-primary: #1E293B;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #22C55E;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #22C55E;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* Financial platform specific colors */
+  --color-primary-green: var(--primary-green);
+  --color-primary-orange: var(--primary-orange);
+  --color-primary-white: var(--primary-white);
+  --color-light-green: var(--light-green);
+  --color-light-orange: var(--light-orange);
+  --color-dark-green: var(--dark-green);
+  --color-dark-orange: var(--dark-orange);
+  --color-neutral-gray: var(--neutral-gray);
+  --color-border-gray: var(--border-gray);
+  --color-text-gray: var(--text-gray);
+  --color-text-dark: var(--text-dark);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-weight: 400;
+  }
+}
+
+/**
+ * Base typography with financial platform styling
+ */
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      font-size: 1.875rem;
+      font-weight: 700;
+      line-height: 1.4;
+      color: var(--text-dark);
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      line-height: 1.4;
+      color: var(--text-dark);
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      line-height: 1.4;
+      color: var(--text-dark);
+    }
+
+    h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.4;
+      color: var(--text-dark);
+    }
+
+    p {
+      font-size: 0.875rem;
+      font-weight: 400;
+      line-height: 1.5;
+      color: var(--text-gray);
+    }
+
+    label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      line-height: 1.4;
+      color: var(--text-dark);
+    }
+
+    button {
+      font-size: 0.875rem;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    input {
+      font-size: 0.875rem;
+      font-weight: 400;
+      line-height: 1.4;
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}
+
+/* Financial platform utility classes */
+@layer utilities {
+  /* Text colors */
+  .text-primary-green { color: var(--color-primary-green); }
+  .text-primary-orange { color: var(--color-primary-orange); }
+  .text-text-dark { color: var(--color-text-dark); }
+  .text-text-gray { color: var(--color-text-gray); }
+  .text-success { color: var(--color-success); }
+  .text-warning { color: var(--color-warning); }
+  .text-error { color: var(--color-error); }
+  
+  /* Background colors */
+  .bg-primary-green { background-color: var(--color-primary-green); }
+  .bg-primary-orange { background-color: var(--color-primary-orange); }
+  .bg-light-green { background-color: var(--color-light-green); }
+  .bg-light-orange { background-color: var(--color-light-orange); }
+  .bg-neutral-gray { background-color: var(--color-neutral-gray); }
+  
+  /* Border colors */
+  .border-gray { border-color: var(--color-border-gray); }
+  .border-green { border-color: var(--color-primary-green); }
+  .border-orange { border-color: var(--color-primary-orange); }
+}
+
+/* Enhanced component styling for financial platform */
+@layer components {
+  .financial-card {
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-border-gray);
+    padding: 1.5rem;
+    background-color: var(--color-primary-white);
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+  
+  .financial-input {
+    border: 2px solid var(--color-primary-green);
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+  }
+  
+  .financial-input:focus {
+    border-color: var(--color-dark-green);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+  }
+  
+  .btn-primary {
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+    color: #FFFFFF;
+    background-color: var(--color-primary-green);
+    border: none;
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--color-dark-green);
+    box-shadow: 0 0 0 1px var(--color-primary-green), 0 0 8px rgba(34, 197, 94, 0.4);
+  }
+  
+  .btn-secondary {
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+    background-color: transparent;
+    color: var(--color-primary-green);
+    border: 1px solid var(--color-primary-green);
+  }
+  
+  .btn-secondary:hover {
+    background-color: var(--color-light-green);
+  }
+  
+  .btn-warning {
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+    color: #FFFFFF;
+    background-color: var(--color-primary-orange);
+    border: none;
+  }
+  
+  .btn-warning:hover {
+    background-color: var(--color-dark-orange);
+  }
+  
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    color: var(--color-text-gray);
+    text-decoration: none;
+  }
+  
+  .nav-item-active {
+    background-color: var(--color-light-green);
+    color: var(--color-primary-green);
+    border: 1px solid var(--color-primary-green);
+  }
+  
+  .nav-item:hover {
+    background-color: var(--color-neutral-gray);
+    color: var(--color-text-dark);
+  }
+
+  .financial-shadow {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+  
+  .financial-shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+  
+  .status-tag {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  
+  .status-success {
+    color: var(--color-success);
+    background-color: var(--color-light-green);
+  }
+  
+  .status-warning {
+    color: var(--color-warning);
+    background-color: var(--color-light-orange);
+  }
+  
+  .status-error {
+    color: var(--color-error);
+    background-color: #FEE2E2;
+  }
+  
+  .metric-positive {
+    color: var(--color-success);
+  }
+  
+  .metric-negative {
+    color: var(--color-error);
+  }
+}
