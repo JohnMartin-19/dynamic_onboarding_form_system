@@ -59,13 +59,14 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     } else {
       // Create new form
       const newForm: Form = {
+        ...formData as Form,
         id: Math.random().toString(36).substr(2, 9),
         createdAt: new Date(),
         updatedAt: new Date(),
         submissionCount: 0,
         status: 'draft',
-        ...formData as Form
       };
+      
       setForms(prev => [...prev, newForm]);
     }
     setShowFormBuilder(false);

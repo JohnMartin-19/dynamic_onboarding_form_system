@@ -38,7 +38,6 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
   const updateFormData = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
@@ -97,7 +96,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                   <div className="p-2 bg-primary-green rounded-lg">
                     <Building2 className="w-6 h-6 text-white" />
                   </div>
-                  <h1 className="text-2xl font-bold text-text-dark">FinanceFlow</h1>
+                  <h1 className="text-2xl font-bold text-text-dark">ActServ</h1>
                 </div>
                 <h2 className="text-3xl font-bold text-text-dark">Create Your Account</h2>
                 <p className="text-text-gray mt-2">Join thousands of businesses streamlining their financial processes</p>
@@ -260,14 +259,10 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                   </div>
                 </div>
 
-                {/* Terms and Conditions */}
+                {/* Terms and Conditions
                 <div className="space-y-2">
                   <div className="flex items-start space-x-3">
-                    <Checkbox
-                      checked={agreeToTerms}
-                      onCheckedChange={setAgreeToTerms}
-                      className="mt-1"
-                    />
+                    
                     <div className="space-y-1">
                       <p className="text-sm text-text-dark">
                         I agree to the{' '}
@@ -282,7 +277,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                     </div>
                   </div>
                   {errors.terms && <p className="text-xs text-error">{errors.terms}</p>}
-                </div>
+                </div> */}
 
                 {/* Submit Button */}
                 <Button 

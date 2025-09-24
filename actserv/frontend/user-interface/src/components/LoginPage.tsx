@@ -15,12 +15,14 @@ import {
 } from 'lucide-react';
 
 interface LoginPageProps {
-  onLogin: (email: string, password: string, userType: 'admin' | 'client') => void;
+  onLogin: (email: string, password: string, userType?: 'admin' | 'client') => void;
   onSwitchToSignup: () => void;
-  onAdminPortal: () => void;
+  onAdminPortal?: () => void;
+  isAdminMode?: boolean;
+  onBackToLogin?: () => void;
 }
 
-export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal }: LoginPageProps) {
+export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal, isAdminMode = false, onBackToLogin }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -41,25 +43,41 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal }: LoginPag
     // Simulate login delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // For demo purposes, determine user type based on email
-    const userType = email.includes('admin') ? 'admin' : 'client';
-    
-    onLogin(email, password, userType);
+    if (isAdminMode) {
+      // Admin login - always admin userType
+      onLogin(email, password);
+    } else {
+      // Regular login - determine user type based on email
+      const userType = email.includes('admin') ? 'admin' : 'client';
+      onLogin(email, password, userType);
+    }
     setIsLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-gray via-light-green to-light-orange relative overflow-hidden">
-      {/* Admin Portal Button - Top Right */}
+      {/* Admin Portal Button or Back Button - Top Right */}
       <div className="absolute top-6 right-6 z-10">
-        <Button 
-          onClick={onAdminPortal}
-          variant="outline"
-          className="bg-white/90 backdrop-blur-sm border-primary-green text-primary-green hover:bg-primary-green hover:text-white transition-all duration-300"
-        >
-          <Users className="w-4 h-4 mr-2" />
-          Admin Portal
-        </Button>
+        {isAdminMode && onBackToLogin ? (
+          <Button 
+            onClick={onBackToLogin}
+            variant="outline"
+            className="bg-white/90 backdrop-blur-sm border-text-gray text-text-gray hover:bg-text-gray hover:text-white transition-all duration-300"
+          >
+            ← Back to Login
+          </Button>
+        ) : (
+          onAdminPortal && (
+            <Button 
+              onClick={onAdminPortal}
+              variant="outline"
+              className="bg-white/90 backdrop-blur-sm border-primary-green text-primary-green hover:bg-primary-green hover:text-white transition-all duration-300"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Admin Portal
+            </Button>
+          )
+        )}
       </div>
 
       {/* Background Elements */}
@@ -80,7 +98,7 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal }: LoginPag
                   <Building2 className="w-8 h-8 text-white" />
                 </div>
                 <h1 className="text-4xl font-bold text-text-dark">
-                  FinanceFlow
+                  ActServ
                 </h1>
               </div>
               
@@ -136,8 +154,12 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal }: LoginPag
             <Card className="w-full max-w-md p-8 financial-shadow-lg bg-white/95 backdrop-blur-sm border-0">
               <div className="space-y-6">
                 <div className="text-center">
-                  <h3 className="text-2xl font-bold text-text-dark">Welcome Back</h3>
-                  <p className="text-text-gray mt-2">Sign in to your account</p>
+                  <h3 className="text-2xl font-bold text-text-dark">
+                    {isAdminMode ? 'Admin Portal' : 'Welcome Back'}
+                  </h3>
+                  <p className="text-text-gray mt-2">
+                    {isAdminMode ? 'Sign in with your admin credentials' : 'Sign in to your account'}
+                  </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
@@ -208,7 +230,7 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal }: LoginPag
                       <div className="w-full border-t border-border-gray"></div>
                     </div>
                     <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-white text-text-gray">New to FinanceFlow?</span>
+                      <span className="px-2 bg-white text-text-gray">New to ActServ?</span>
                     </div>
                   </div>
 

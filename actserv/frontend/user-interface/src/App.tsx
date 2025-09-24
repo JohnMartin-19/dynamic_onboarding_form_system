@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import{ useState } from 'react';
 import { AdminDashboard } from './components/AdminDashboard';
 import { ClientPortal } from './components/ClientPortal';
 import { LoginPage } from './components/LoginPage';
 import { SignupPage } from './components/SignupPage';
 import { Button } from './components/ui/button';
 import { Users, UserCheck } from 'lucide-react';
-import '../styles/globals.css';
-
-type AuthState = 'login' | 'signup' | 'roleSelection';
+import '../styles/globals.css'
+type AuthState = 'login' | 'signup' | 'adminLogin' | 'roleSelection';
 type UserType = 'admin' | 'client';
 
 interface User {
@@ -27,13 +26,21 @@ export default function App() {
   const [authState, setAuthState] = useState<AuthState>('login');
   const [user, setUser] = useState<User | null>(null);
 
-  const handleLogin = (email: string, password: string, userType: UserType) => {
-    // In a real app, this would make an API call to authenticate
-    setUser({ email, userType, name: email.split('@')[0] });
+  const handleLogin = (
+    email: string,
+    _password: string,
+    userType?: UserType
+  ) => {
+    const finalType: UserType = userType ?? "client"; 
+    setUser({ email, userType: finalType, name: email.split('@')[0] });
+  };
+  
+
+  const handleAdminLogin = (email: string, _password: string) => {
+    setUser({ email, userType: 'admin', name: email.split('@')[0] });
   };
 
   const handleSignup = (userData: SignupData) => {
-    // In a real app, this would make an API call to create the account
     const userType: UserType = userData.email.includes('admin') ? 'admin' : 'client';
     setUser({ 
       email: userData.email, 
@@ -48,50 +55,45 @@ export default function App() {
   };
 
   const handleAdminPortal = () => {
-    setAuthState('roleSelection');
+    setAuthState('adminLogin');
   };
 
-  // Show role selection (original portal selection)
+ 
   if (authState === 'roleSelection') {
     return (
       <div className="min-h-screen bg-neutral-gray flex items-center justify-center">
-        <div className="financial-card w-full max-w-6xl mx-4 p-8 rounded-2xl bg-white shadow-lg">
+        <div className="financial-card max-w-md w-full mx-4">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold mb-2">Financial Services Onboarding</h1>
-            <p className="text-gray-600">Select your role to continue</p>
+            <h1 className="mb-2">Financial Services Onboarding</h1>
+            <p>Select your role to continue</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Role buttons */}
-            <div className="space-y-4">
-              <Button 
-                onClick={() => setUser({ email: 'admin@demo.com', userType: 'admin' })}
-                className="btn-primary w-full flex items-center justify-center gap-2"
-              >
-                <Users className="w-5 h-5" />
-                Admin Portal
-              </Button>
-              
-              <Button 
-                onClick={() => setUser({ email: 'client@demo.com', userType: 'client' })}
-                className="btn-secondary w-full flex items-center justify-center gap-2"
-              >
-                <UserCheck className="w-5 h-5" />
-                Client Portal
-              </Button>
-            </div>
-
-            {/* Demo Info */}
-            <div className="p-6 bg-light-green rounded-lg">
-              <p className="text-sm text-primary-green leading-relaxed">
-                <strong>Demo Platform:</strong> This is a flexible onboarding system for financial services. 
-                Admins can create custom forms, while clients can submit KYC, loan applications, and investment declarations. 
-                The system is designed to scale and adapt to future requirements dynamically.
-              </p>
-            </div>
+          <div className="space-y-4">
+            <Button 
+              onClick={() => setUser({ email: 'admin@demo.com', userType: 'admin' })}
+              className="btn-primary w-full flex items-center justify-center gap-2"
+            >
+              <Users className="w-5 h-5" />
+              Admin Portal
+            </Button>
+            
+            <Button 
+              onClick={() => setUser({ email: 'client@demo.com', userType: 'client' })}
+              className="btn-secondary w-full flex items-center justify-center gap-2"
+            >
+              <UserCheck className="w-5 h-5" />
+              Client Portal
+            </Button>
+          </div>
+          
+          <div className="mt-6 p-4 bg-light-green rounded-lg">
+            <p className="text-sm text-primary-green">
+              <strong>Demo Platform:</strong> This is a flexible onboarding system for financial services. 
+              Admins can create custom forms, while clients can submit KYC, loan applications, and investment declarations.
+            </p>
           </div>
 
-          <div className="mt-6 text-center">
+          <div className="mt-4 text-center">
             <Button
               variant="ghost"
               onClick={() => setAuthState('login')}
@@ -105,7 +107,6 @@ export default function App() {
     );
   }
 
-  // Show authenticated user interface
   if (user) {
     return (
       <div className="min-h-screen bg-neutral-gray">
@@ -118,7 +119,19 @@ export default function App() {
     );
   }
 
-  // Show authentication pages
+  
+  if (authState === 'adminLogin') {
+    return (
+      <LoginPage
+        onLogin={(email, password) => handleAdminLogin(email, password)}
+        onSwitchToSignup={() => setAuthState('signup')}
+        isAdminMode={true}
+        onBackToLogin={() => setAuthState('login')}
+      />
+    );
+  }
+
+ 
   if (authState === 'signup') {
     return (
       <SignupPage
@@ -128,7 +141,7 @@ export default function App() {
     );
   }
 
-  // Default: Show login page
+ 
   return (
     <LoginPage
       onLogin={handleLogin}
