@@ -38,13 +38,6 @@ const fieldTypeIcons = {
   file: Upload
 };
 
-const defaultField: Partial<FormField> = {
-  name: '',
-  label: '',
-  type: 'text',
-  required: false,
-  placeholder: ''
-};
 
 export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
   const [formData, setFormData] = useState({
@@ -91,12 +84,6 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
     setFields(prev => prev.filter((_, i) => i !== index));
   };
 
-  const moveField = (fromIndex: number, toIndex: number) => {
-    const newFields = [...fields];
-    const [movedField] = newFields.splice(fromIndex, 1);
-    newFields.splice(toIndex, 0, movedField);
-    setFields(newFields);
-  };
 
   const handleSave = () => {
     const formToSave: Partial<Form> = {
@@ -157,7 +144,7 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
             </div>
 
             <div className="space-y-6">
-              {fields.map((field, index) => {
+              {fields.map((field) => {
                 const IconComponent = fieldTypeIcons[field.type];
                 
                 return (

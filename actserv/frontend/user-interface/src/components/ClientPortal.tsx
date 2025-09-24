@@ -13,7 +13,7 @@ import {
   Eye,
   Plus
 } from 'lucide-react';
-import { mockForms, mockSubmissions } from '../utils/mockData';
+import { mockForms, mockSubmissions } from '../../utils/mockData';
 import { Form, FormSubmission } from '../types/forms';
 
 interface ClientPortalProps {
