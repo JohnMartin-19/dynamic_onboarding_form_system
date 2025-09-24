@@ -14,7 +14,7 @@ import {
   Plus
 } from 'lucide-react';
 import { mockForms, mockSubmissions } from '../../utils/mockData';
-import { Form, FormSubmission } from '../types/forms';
+import { type Form, type FormSubmission } from '../../types/forms';
 
 interface ClientPortalProps {
   onLogout: () => void;

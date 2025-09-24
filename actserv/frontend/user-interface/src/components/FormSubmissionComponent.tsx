@@ -14,7 +14,7 @@ import {
   FileText,
   AlertCircle
 } from 'lucide-react';
-import { Form, FormField } from '../types/forms';
+import { type Form, type FormField } from '../../types/forms';
 
 interface FormSubmissionComponentProps {
   form: Form;
@@ -264,7 +264,7 @@ export function FormSubmissionComponent({ form, onSubmit, onCancel }: FormSubmis
                     {field.type === 'dropdown' && (
                       <Select
                         value={formData[field.name] || ''}
-                        onValueChange={(value) => updateFormData(field.name, value)}
+                        onValueChange={(value:any) => updateFormData(field.name, value)}
                       >
                         <SelectTrigger className={hasError ? 'border-error' : ''}>
                           <SelectValue placeholder="Select an option" />
@@ -283,7 +283,7 @@ export function FormSubmissionComponent({ form, onSubmit, onCancel }: FormSubmis
                       <div className="flex items-center space-x-2">
                         <Checkbox
                           checked={formData[field.name] || false}
-                          onCheckedChange={(checked) => updateFormData(field.name, checked)}
+                          onCheckedChange={(checked: any) => updateFormData(field.name, checked)}
                         />
                         <Label>{field.label}</Label>
                       </div>

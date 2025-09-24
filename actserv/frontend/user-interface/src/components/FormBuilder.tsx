@@ -21,7 +21,7 @@ import {
   CheckSquare,
   Upload
 } from 'lucide-react';
-import { Form, FormField } from '../types/forms';
+import { type Form, type FormField } from '../../types/forms';
 
 interface FormBuilderProps {
   form: Form | null;
