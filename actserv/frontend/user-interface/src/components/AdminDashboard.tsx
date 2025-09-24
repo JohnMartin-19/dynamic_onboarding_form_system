@@ -18,8 +18,8 @@ import {
   Clock,
   AlertTriangle
 } from 'lucide-react';
-import { mockForms, mockSubmissions, mockNotifications } from '../utils/mockData';
-import { Form, FormSubmission, Notification } from '../types/forms';
+import { mockForms, mockSubmissions, mockNotifications } from '../../utils/mockData';
+import { type Form, type FormSubmission, type Notification } from '../../types/forms';
 
 interface AdminDashboardProps {
   onLogout: () => void;

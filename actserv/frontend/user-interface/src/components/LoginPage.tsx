@@ -3,7 +3,6 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card } from './ui/card';
-import { ImageWithFallback } from './figma/ImageWithFallback';
 import { 
   Lock, 
   Mail, 
@@ -122,7 +121,7 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal }: LoginPag
             {/* Financial Image */}
             <div className="relative">
               <div className="rounded-2xl overflow-hidden shadow-2xl border-2 border-white/50">
-                <ImageWithFallback
+                <img
                   src="https://images.unsplash.com/photo-1733503747506-773e56e4078f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaW5hbmNpYWwlMjB0ZWNobm9sb2d5JTIwb2ZmaWNlJTIwbW9kZXJufGVufDF8fHx8MTc1ODYzMjc5OXww&ixlib=rb-4.1.0&q=80&w=1080"
                   alt="Modern financial technology office"
                   className="w-full h-64 object-cover"
