@@ -194,7 +194,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
 
                   <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
-                    <Select value={formData.role} onValueChange={(value) => updateFormData('role', value)}>
+                    <Select value={formData.role} onValueChange={(value: string) => updateFormData('role', value)}>
                       <SelectTrigger className="financial-input">
                         <SelectValue placeholder="Select your role" />
                       </SelectTrigger>

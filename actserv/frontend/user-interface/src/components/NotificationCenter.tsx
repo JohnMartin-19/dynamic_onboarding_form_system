@@ -11,7 +11,7 @@ import {
   Settings,
   User
 } from 'lucide-react';
-import { Notification } from '../types/forms';
+import { type Notification } from '../../types/forms';
 
 interface NotificationCenterProps {
   notifications: Notification[];

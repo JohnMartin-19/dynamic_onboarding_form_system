@@ -17,7 +17,8 @@ import {
   FileText,
   Download
 } from 'lucide-react';
-import { FormSubmission } from '../types/forms';
+import { type FormSubmission } from '../../types/forms';
+import { Label } from './ui/label';
 
 interface SubmissionManagerProps {
   submissions: FormSubmission[];
