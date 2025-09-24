@@ -56,7 +56,7 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal, isAdminMod
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-gray via-light-green to-light-orange relative overflow-hidden">
-      {/* Admin Portal Button or Back Button - Top Right */}
+     
       <div className="absolute top-6 right-6 z-10">
         {isAdminMode && onBackToLogin ? (
           <Button 
