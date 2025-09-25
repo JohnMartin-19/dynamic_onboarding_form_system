@@ -17,3 +17,15 @@ class FieldSerializer(serializers.ModelSerializer):
                   'options','is_required','order','created_at']
         
     
+class SubmissionSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        models = Submission
+        fields = ['id','form','user','data',
+                  'status','submitted_at','updated_at']
+        
+class DocumentSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        models = Document
+        fields = ['id','submission','field','file','updated_at']
