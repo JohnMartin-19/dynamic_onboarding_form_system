@@ -40,6 +40,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     'corsheaders',
+    'rest_framework',
+    "drf_spectacular",
+    'rest_framework_simplejwt.token_blacklist',
     
     # "authentication.apps.AuthenticationConfig"
 
