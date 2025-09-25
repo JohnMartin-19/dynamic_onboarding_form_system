@@ -49,8 +49,27 @@ class FormRetrieveUpdateDestroyAPIView(APIView):
     """
     helper method for getting a particular form by id
     """
-    
+    serializer_class = FormSerializer
     def get_object(self, request,pk):
         return get_object_or_404(pk=pk)
+    
+    def get(self, request,pk):
+        form = self.get_object(pk)
+        serializer = self.serializer_class(form)
+        return Response({'message':'Success', 'data':serializer.data}, status=status.HTTP_200_OK)
+    
+    def put(self, request, pk):
+        form = self.get_object(pk)
+        serializer = self.serializer_class(form, data = request.data, partial = True)
+        if serializer.is_valid():
+            with transaction.atomic():
+                serializer.save()
+                return Response({'message':'Form updated successfully','data':serializer.data}, status=status.HTTP_200_OK)
+            return Response({'mesage':'Failed to update form', 'data':serializer.errors},status=status.HTTP_400_BAD_REQUEST)
+        
+    def delete(self, pk):
+        form = self.get_object(pk)
+        form.delete()
+        return Response({'message':'Form delete successfully'},status=status.HTTP_204_NO_CONTENT)
     
                 
