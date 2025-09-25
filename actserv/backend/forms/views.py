@@ -1,3 +1,56 @@
 from django.shortcuts import render
+from rest_framework.decorators import  permission_classes
+from rest_framework.permissions import IsAdminUser
+from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework.response import Response
+from .models import *
+from .serializers import *
+from rest_framework_simplejwt.tokens import RefreshToken,AccessToken
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.db import transaction
+from rest_framework.permissions import AllowAny,IsAdmin
+from rest_framework.exceptions import ValidationError
+from django.shortcuts import get_object_or_404
 
-# Create your views here.
+class FormCreateListAPIView(APIView):
+    """
+    _FETCHING ALL FORMS_
+
+    Args:
+        APIView (_GET_): _Returns all the forms created by the admin_
+        
+    """
+    serializer_class = FormSerializer
+    
+    def get(self, request):
+        forms = Form.objects.all()
+        serializer = self.serializer_class(forms, many = True)
+        return Response({'message':'Success','data':serializer.data},status=status.HTTP_200_OK)
+    
+    """
+    _Creating a FORM_
+
+    Args:
+        APIView (_POST_): _Lets the admin create a form _
+        
+    """
+    @permission_classes([IsAdminUser])
+    def post(self,request):
+        data = request.data
+        serializer = self.serializer_class(data = data)
+        if serializer.is_valid():
+            with transaction.atomic():
+                serializer.save()
+                return Response({'message':'Form created successfully','data':serializer.data},status = status.HTTP_201_CREATED)
+            return Response({'message':'Failed to create form', 'data':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+class FormRetrieveUpdateDestroyAPIView(APIView):
+    """
+    helper method for getting a particular form by id
+    """
+    
+    def get_object(self, request,pk):
+        return get_object_or_404(pk=pk)
+    
+                
