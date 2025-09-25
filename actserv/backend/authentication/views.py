@@ -6,12 +6,11 @@ from .serializers import *
 from rest_framework_simplejwt.tokens import RefreshToken,AccessToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db import transaction
-from django.utils.text import slugify
-from django_tenants.utils import schema_context
-from tenants.serializers import *
+from rest_framework.permissions import AllowAny
+from rest_framework.exceptions import ValidationError
 class UserRegistrationCreateListAPIView(APIView):
     serializer_class = UserRegistrationSerializer
-    
+    permission_classes = [AllowAny]
     def post(self,request):
         data = request.data
         password = data.get('password')
@@ -25,7 +24,7 @@ class UserRegistrationCreateListAPIView(APIView):
         
         serializer = self.serializer_class(data = data)
         if password != confirm_password:
-            raise f'Passwords should match!'
+            raise ValidationError({"password": "Passwords do not match"})
         if serializer.is_valid():
             with transaction.atomic():
                 serializer.save()
@@ -33,3 +32,7 @@ class UserRegistrationCreateListAPIView(APIView):
                                  'data':serializer.data}, status = status.HTTP_201_CREATED)
             return Response({'message':'Failed to create user', 'data':serializer.errors}, status = status.HTTP_400_BAD_REQUEST)
                 
+    def get(self, request):
+        users = CustomUser.objects.all()
+        serializer = self.serializer_class(users, many = True)
+        return Response({'message':'Success', 'data':serializer.data}, status = status.HTTP_200_OK)
