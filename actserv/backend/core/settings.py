@@ -10,8 +10,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from datetime import timedelta
-import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -22,30 +20,30 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%mkow-tq@(vofqq2bh--uv@72hes_s70!if0@793!bhzb)dpt8'
+SECRET_KEY = 'django-insecure-$^1rjpv&##1q*bx=7kwt33gmxpshmhw$l)x25pn)zdrf3srjk('
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'authentication',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
-    "rest_framework_simplejwt",
+    
     'corsheaders',
     
-    #installed local apps
-    'authentication',
-    'forms',
+    # "authentication.apps.AuthenticationConfig"
+
+    
 ]
 
 MIDDLEWARE = [
@@ -83,12 +81,8 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 DATABASES = {
     'default': {
-        "ENGINE": "django.db.backends.postgresql",
-        'NAME': os.getenv('DB_NAME','erp'),
-        'PASSWORD':os.getenv('DB_PASSWORD'),
-        'USER':os.getenv('DB_USER'),
-        'HOST':os.getenv('DB_HOST'),
-        'PORT':os.getenv('DB_PORT'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -133,32 +127,5 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-AUTH_USER_MODEL = 'authentication.CustomUser'
 
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.AllowAny",
-    ),
-}
-
-
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),   # adjust as needed
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    "ROTATE_REFRESH_TOKENS": False,
-    "BLACKLIST_AFTER_ROTATION": True,
-    "AUTH_HEADER_TYPES": ("Bearer",),
-}
-
-SPECTACULAR_SETTINGS = {
-    "TITLE": "ACTSERV APIs",
-    "DESCRIPTION": "API documentation for the Dynamic Onboarding Management System",
-    "VERSION": "1.0.0",
-}
-
-
-
-CORS_ALLOW_ALL_ORIGINS = True 
+AUTH_USER_MODEL = "authentication.CustomUser"

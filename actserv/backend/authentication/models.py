@@ -1,6 +1,7 @@
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
+from multiprocessing.managers import BaseManager
 from django.db import models
-
+from django.contrib.auth.models import AbstractBaseUser,PermissionsMixin,UserManager
+# Create your models here.
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [
@@ -24,6 +25,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(auto_now_add=True)
 
     objects = UserManager()
+    
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name', 'phone_number', 'company_name', 'role']
