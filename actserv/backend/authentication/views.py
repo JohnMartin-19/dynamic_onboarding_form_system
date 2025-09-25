@@ -1,3 +1,35 @@
-from django.shortcuts import render
-
-# Create your views here.
+from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework.response import Response
+from .models import *
+from .serializers import *
+from rest_framework_simplejwt.tokens import RefreshToken,AccessToken
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.db import transaction
+from django.utils.text import slugify
+from django_tenants.utils import schema_context
+from tenants.serializers import *
+class UserRegistrationCreateListAPIView(APIView):
+    serializer_class = UserRegistrationSerializer
+    
+    def post(self,request):
+        data = request.data
+        password = data.get('password')
+        confirm_password = data.get('confirm_password')
+        # company_name = request.data.get("company_name")
+        # email = request.data.get("email")
+        # phone_number = request.data.get("phone_number")
+        # username = request.data.get("username")
+        # first_name = request.data.get('first_name')
+        # last_name = request.data.get('last_name')
+        
+        serializer = self.serializer_class(data = data)
+        if password != confirm_password:
+            raise f'Passwords should match!'
+        if serializer.is_valid():
+            with transaction.atomic():
+                serializer.save()
+                return Response({'message':'User Created Successfully', 
+                                 'data':serializer.data}, status = status.HTTP_201_CREATED)
+            return Response({'message':'Failed to create user', 'data':serializer.errors}, status = status.HTTP_400_BAD_REQUEST)
+                
