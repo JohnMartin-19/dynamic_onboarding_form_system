@@ -36,7 +36,7 @@ CORS_ALLOW_CREDENTIALS = True
 # Application definition
 
 INSTALLED_APPS = [
-    
+     'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -55,6 +55,9 @@ INSTALLED_APPS = [
 
     
 ]
+
+GRAPPELLI_ADMIN_TITLE = "ActServ Onboarding System Admin" 
+
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
@@ -142,15 +145,31 @@ AUTH_USER_MODEL = 'authentication.CustomUser'
 
 
 
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "authentication.auth.TenantJWTAuthentication",  
-    ],
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
-    ],
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"
-,
+# REST_FRAMEWORK = {
+#     "DEFAULT_AUTHENTICATION_CLASSES": [
+#         "authentication.auth.TenantJWTAuthentication",  
+#     ],
+#     "DEFAULT_PERMISSION_CLASSES": [
+#         "rest_framework.permissions.AllowAny",
+#     ],
+#     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"
+# ,
+# }
+JAZZMIN_SETTINGS = {
+    # Basic settings (adjust these to your liking)
+    "site_title": "Financial Services Admin",
+    "site_header": "Financial Services",
+    "site_brand": "FS",
+    "welcome_sign": "Welcome to the Admin Portal",
+    
+    # UI builder is defined here
+    "show_ui_builder": True, 
+}
+
+JAZZMIN_UI_TWEAKS = {
+    
+    "theme": "slate",
+ 
 }
 
 SPECTACULAR_SETTINGS = {
