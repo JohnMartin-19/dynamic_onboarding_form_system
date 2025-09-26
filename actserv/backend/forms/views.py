@@ -149,3 +149,12 @@ class SubmissionRetirieveUpdateDestroyAPIView(APIView):
         submission.delete()
         return Response({'message':'Submission deleted successfully'}, status = status.HTTP_204_NO_CONTENT)
         
+
+class MySubmissions(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = SubmissionSerializer
+    def get(self,request):
+        
+        my_submissions = Submission.objects.filter(user =request.user)
+        serializer = self.serializer_class(my_submissions)
+        return Response({'message':'Success','data':serializer.data}, status=status.HTTP_200_OK)
