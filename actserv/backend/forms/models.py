@@ -1,7 +1,6 @@
 from django.db import models
 from authentication.models import *
-# Create your models here.
-from django.contrib.postgres.fields import  JSONField
+
 class Form(models.Model):
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField(blank=True)
@@ -30,7 +29,7 @@ class Field(models.Model):
     form = models.ForeignKey(Form, on_delete=models.CASCADE, related_name='fields')
     name = models.CharField(max_length=255) 
     type = models.CharField(max_length=20, choices=FIELD_TYPES)
-    options = JSONField(
+    options = models.JSONField(
         default=dict,
         blank=True,
         help_text="Stores validation rules or dropdown options e.g {'min': 1000, 'max': 100000} or ['Option1', 'Option2']"
@@ -53,7 +52,7 @@ class Submission(models.Model):
 
     form = models.ForeignKey(Form, on_delete=models.CASCADE, related_name='submissions')
     user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='submissions')
-    data = JSONField(
+    data = models.JSONField(
         default=dict,
         help_text="Stores form responses, e.g., {'field_name': 'value', 'income': 50000}"
     )

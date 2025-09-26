@@ -44,7 +44,8 @@ INSTALLED_APPS = [
     "drf_spectacular",
     'rest_framework_simplejwt.token_blacklist',
     
-    # "authentication.apps.AuthenticationConfig"
+    #installed local apps
+    'forms',
 
     
 ]

@@ -9,7 +9,6 @@ from .serializers import *
 from rest_framework_simplejwt.tokens import RefreshToken,AccessToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db import transaction
-from rest_framework.permissions import AllowAny,IsAdmin
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 
@@ -68,7 +67,7 @@ class FormRetrieveUpdateDestroyAPIView(APIView):
         form.delete()
         return Response({'message':'Form delete successfully'},status=status.HTTP_204_NO_CONTENT)
     
-class FieldCreatelistAPIView(APIView):
+class FieldCreateListAPIView(APIView):
     """
     API view to create and list all form fields
     """
