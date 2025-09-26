@@ -72,4 +72,25 @@ class FormRetrieveUpdateDestroyAPIView(APIView):
         form.delete()
         return Response({'message':'Form delete successfully'},status=status.HTTP_204_NO_CONTENT)
     
-                
+class FieldCreatelistAPIView(APIView):
+    """
+    API view to create and list all form fields
+    """
+    serializer_class = FieldSerializer
+    
+    def get(self, request):
+        fields = Field.objects.all()
+        serializer = self.serializer_class(fields, many=True)
+        return Response({'message':'Success','data':serializer.data}, status=status.HTTP_200_OK)
+    
+    @permission_classes([IsAdminUser])
+    def post(self, request):
+        data = request.data
+        serializer = self.serializer_class(data = data)
+        if serializer.is_valid():
+            with transaction.atomic():
+                serializer.save()
+                return Response({'message':'Field created successfully', 'data':serializer.data}, status=status.HTTP_201_CREATED)
+            return Response({'message':'Failed to create field', 'data':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
