@@ -93,4 +93,28 @@ class FieldCreatelistAPIView(APIView):
                 return Response({'message':'Field created successfully', 'data':serializer.data}, status=status.HTTP_201_CREATED)
             return Response({'message':'Failed to create field', 'data':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
-        
+class FieldRetrieveUpdateDestroyAPIView(APIView):
+    
+    serializer_class = FieldSerializer
+    
+    def get_object(self, request, pk):
+        return get_object_or_404(pk=pk)
+    
+    def get(self, request,pk):
+        field = self.get_object(pk)
+        serializer = self.serializer_class(field)
+        return Response({'message':'Success', 'data':serializer.data}, status = status.HTTP_200_OK)
+    
+    def put(self,request, pk):
+        field = self.get_object(pk)
+        serializer = self.serializer_class(field,data = request.data,partial = True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message':'Field updated successfully', 'data':serializer.data}, status = status.HTTP_200_OK)
+        return Response({'message':'Failed to update the field', 'data':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, pk):
+        field = self.get_object(pk)
+        field.delete()
+        return Response({'message':'Field deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+    
