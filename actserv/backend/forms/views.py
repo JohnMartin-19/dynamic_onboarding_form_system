@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework.decorators import  permission_classes
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
@@ -15,11 +15,7 @@ from django.shortcuts import get_object_or_404
 
 class FormCreateListAPIView(APIView):
     """
-    _FETCHING ALL FORMS_
-
-    Args:
-        APIView (_GET_): _Returns all the forms created by the admin_
-        
+    FETCHING ALL FORMS 
     """
     serializer_class = FormSerializer
     
@@ -118,3 +114,38 @@ class FieldRetrieveUpdateDestroyAPIView(APIView):
         field.delete()
         return Response({'message':'Field deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
     
+class SubmissionCreateListAPIView(APIView):
+    
+    serializer_class = SubmissionSerializer
+    permission_classes = [IsAuthenticated]
+   
+    def get(self, request):
+        submissions = Submission.objects.all()
+        serializer = self.serializer_class(submissions, many = True)
+        return Response({'message':'Success', 'data':serializer.data}, status=status.HTTP_200_OK)
+   
+    def post(self, request):
+        serializer = self.serializer_class(data = request.data)
+        if serializer.is_valid():
+            with transaction.atomic():
+                serializer.save()
+                return Response({'message':'Form submitted successfully', 'data':serializer.data}, status=status.HTTP_201_CREATED)
+            return Resposne({'message':'Failed to submit form', 'data':serializer.errors}, status= status.HTTP_400_BAD_REQUEST)
+        
+class SubmissionRetirieveUpdateDestroyAPIView(APIView):
+    
+    serializer_class = SubmissionSerializer
+    
+    def get_object(self, request, pk):
+        return get_object_or_404(pk=pk)
+    
+    def get(self, request, pk):
+        submission = self.get_object(pk)
+        serializer = self.serializer_class(submission)
+        return Response({'message':'Success', 'data':serializer.data}, status = status.HTTP_200_OK)
+    
+    def delete(self,pk):
+        submission = self.get_object(pk)
+        submission.delete()
+        return Response({'message':'Submission deleted successfully'}, status = status.HTTP_204_NO_CONTENT)
+        
