@@ -18,15 +18,21 @@ import { type Form, type FormSubmission } from '../../types/forms';
 
 interface ClientPortalProps {
   onLogout: () => void;
+  // 💡 NEW PROP: Accept the client's name from the parent component (App.tsx)
+  clientName: string;
+  // Assuming the email is also passed for filtering submissions
+  clientEmail: string; 
 }
 
-export function ClientPortal({ onLogout }: ClientPortalProps) {
+export function ClientPortal({ onLogout, clientName, clientEmail }: ClientPortalProps) {
   const [activeTab, setActiveTab] = useState('available');
   const [forms] = useState<Form[]>(mockForms.filter(f => f.status === 'active'));
   const [submissions, setSubmissions] = useState<FormSubmission[]>(mockSubmissions);
   const [selectedForm, setSelectedForm] = useState<Form | null>(null);
-  const [clientName] = useState('John Doe'); // In real app, this would come from auth
-  const [clientEmail] = useState('john.doe@example.com');
+  
+  // ❌ REMOVED: const [clientName] = useState('John Doe');
+  // ❌ REMOVED: const [clientEmail] = useState('john.doe@example.com');
+  // These are now handled by props.
 
   const clientSubmissions = submissions.filter(s => s.clientEmail === clientEmail);
 
@@ -42,8 +48,8 @@ export function ClientPortal({ onLogout }: ClientPortalProps) {
       id: Math.random().toString(36).substr(2, 9),
       formId,
       formName: form.name,
-      clientName,
-      clientEmail,
+      clientName, // Uses prop
+      clientEmail, // Uses prop
       data,
       files,
       status: 'pending',
@@ -108,7 +114,7 @@ export function ClientPortal({ onLogout }: ClientPortalProps) {
               <FileText className="w-8 h-8 text-primary-green" />
               <div>
                 <h1 className="text-xl font-semibold">Client Portal</h1>
-                <p className="text-sm text-text-gray">Welcome, {clientName}</p>
+
               </div>
             </div>
             
@@ -121,6 +127,7 @@ export function ClientPortal({ onLogout }: ClientPortalProps) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
+          {/* ... (Rest of the component remains the same) ... */}
           <TabsList className="grid w-full grid-cols-2 lg:w-[300px]">
             <TabsTrigger value="available">Available Forms</TabsTrigger>
             <TabsTrigger value="submissions">My Submissions</TabsTrigger>
