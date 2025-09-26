@@ -19,7 +19,6 @@ class FormSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at','udated_at']
         
     def get_fields(self, obj):
-        # Fetch related fields without causing recursion
         fields = obj.fields.all()
         return FieldSerializer(fields, many=True, context=self.context).data
 class FieldSerializer(serializers.ModelSerializer):
