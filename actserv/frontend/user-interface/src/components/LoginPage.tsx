@@ -11,16 +11,21 @@ import {
   Building2, 
   TrendingUp, 
   Shield,
-  Users
+  Users,
+  AlertTriangle // Added for error display
 } from 'lucide-react';
 
 interface LoginPageProps {
-  onLogin: (email: string, password: string, userType?: 'admin' | 'client') => void;
+  // onLogin should now handle receiving and storing tokens
+  onLogin: (accessToken: string, refreshToken: string, userType?: 'admin' | 'client') => void;
   onSwitchToSignup: () => void;
   onAdminPortal?: () => void;
   isAdminMode?: boolean;
   onBackToLogin?: () => void;
 }
+
+// 1. Define the API endpoint for login
+const API_URL = 'http://127.0.0.1:8001/auth/api/v1/login/';
 
 export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal, isAdminMode = false, onBackToLogin }: LoginPageProps) {
   const [email, setEmail] = useState('');
@@ -39,24 +44,61 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal, isAdminMod
     }
 
     setIsLoading(true);
-    
-    // Simulate login delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    if (isAdminMode) {
-      // Admin login - always admin userType
-      onLogin(email, password);
-    } else {
-      // Regular login - determine user type based on email
-      const userType = email.includes('admin') ? 'admin' : 'client';
-      onLogin(email, password, userType);
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: email,
+                password: password,
+            }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Success: HTTP 200 OK. Data contains 'access' and 'refresh' tokens.
+            const { access, refresh } = data;
+            
+            // Determine user type (you'll likely need to fetch user details later, 
+            // but for now, keep the email-based mock logic or simplify)
+            const userType = isAdminMode ? 'admin' : (email.includes('admin') ? 'admin' : 'client');
+            
+            // Pass the tokens to the parent component for storage (e.g., localStorage/Redux)
+            onLogin(access, refresh, userType);
+
+        } else {
+            // API Error: HTTP 401 Unauthorized (No active account/Invalid credentials)
+            let errorMessage = 'Login failed. Please check your credentials.';
+            
+            if (data.detail) {
+                // DRF Simple JWT error message (e.g., "No active account found...")
+                errorMessage = data.detail;
+            } else if (data.email || data.password) {
+                // General validation error
+                errorMessage = data.email ? data.email[0] : (data.password ? data.password[0] : errorMessage);
+            }
+            
+            setError(errorMessage);
+        }
+
+    } catch (apiError) {
+        // Network or fetch-related error
+        console.error('Login API Error:', apiError);
+        setError('Could not connect to the server. Please check your network.');
+    } finally {
+        setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-gray via-light-green to-light-orange relative overflow-hidden">
      
+      {/* ... (Admin/Back to Login Button remains the same) ... */}
+
       <div className="absolute top-6 right-6 z-10">
         {isAdminMode && onBackToLogin ? (
           <Button 
@@ -80,12 +122,7 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal, isAdminMod
         )}
       </div>
 
-      {/* Background Elements */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-primary-green rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-40 h-40 bg-primary-orange rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-primary-green rounded-full blur-2xl"></div>
-      </div>
+      {/* ... (Background Elements and Hero Content remains the same) ... */}
 
       <div className="container mx-auto px-4 py-8 min-h-screen flex items-center justify-center">
         <div className="grid lg:grid-cols-2 gap-12 max-w-6xl w-full items-center">
@@ -149,6 +186,7 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal, isAdminMod
             </div>
           </div>
 
+
           {/* Right Side - Login Form */}
           <div className="flex justify-center lg:justify-end">
             <Card className="w-full max-w-md p-8 financial-shadow-lg bg-white/95 backdrop-blur-sm border-0">
@@ -203,7 +241,8 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal, isAdminMod
                   </div>
 
                   {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <AlertTriangle className="w-5 h-5 mr-2 text-red-600" />
                       <p className="text-sm text-red-600">{error}</p>
                     </div>
                   )}
