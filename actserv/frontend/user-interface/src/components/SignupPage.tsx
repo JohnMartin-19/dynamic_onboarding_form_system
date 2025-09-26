@@ -15,15 +15,17 @@ import {
   Building2,
   Phone,
   CheckCircle,
-  AlertTriangle 
+  AlertTriangle,
+  Loader2 // Used for the redirect spinner
 } from 'lucide-react';
 
 interface SignupPageProps {
+  // We keep onSignup to allow App.tsx to handle potential data logging, 
+  // but we remove the logic that logs the user in immediately.
   onSignup: (userData: any) => void;
   onSwitchToLogin: () => void;
 }
 
-// 1. Define the API endpoint
 const API_URL = 'http://127.0.0.1:8001/auth/api/v1/register/';
 
 export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
@@ -42,25 +44,24 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [apiError, setApiError] = useState<string | null>(null); // State for general API errors
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false); 
 
   const updateFormData = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
-    setApiError(null); // Clear general API error
+    setApiError(null);
   };
 
   const validateForm = () => {
-    // ... (Your existing validation logic)
     const newErrors: Record<string, string> = {};
 
     if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
     if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
-    if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email'; // More robust email check
+    if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email';
     if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
     if (!formData.password) newErrors.password = 'Password is required';
     if (formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
@@ -77,18 +78,18 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
     if (!validateForm()) return;
 
     setIsLoading(true);
-    setApiError(null); // Clear any previous API errors
+    setApiError(null);
+    setIsSuccess(false);
 
-    // 2. Map frontend fields to match Django serializer fields (if necessary)
     const payload = {
         first_name: formData.firstName,
         last_name: formData.lastName,
         email: formData.email,
-        phone_number: formData.phone, // Ensure this matches your serializer field
-        company_name: formData.company, // Ensure this matches your serializer field
+        phone_number: formData.phone,
+        company_name: formData.company,
         role: formData.role,
         password: formData.password,
-        confirm_password: formData.confirmPassword // Needed for validation in the serializer/view
+        confirm_password: formData.confirmPassword
     };
 
     try {
@@ -103,51 +104,78 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
         const data = await response.json();
 
         if (response.ok) {
-            // Success: HTTP 201 Created
-            onSignup(data); // Pass successful data to the parent handler
-            // Optionally redirect to login or show a success message
-            onSwitchToLogin(); 
+            
+            // ❌ REMOVED: The logic here that used to log the user in immediately
+            // onSignup(data); // <-- This line is removed or modified to only log/process without setting `user` in App.tsx
+
+            // ACTION: We still call onSignup in case the parent component (App.tsx)
+            // wants to handle the data, but we now know it won't trigger login.
+            onSignup(data); 
+
+            setIsSuccess(true); 
+            
+            // Set 5-second timeout for redirect to the LOGIN page
+            setTimeout(() => {
+                onSwitchToLogin(); 
+            }, 5000); 
+
         } else {
-            // API Error: HTTP 400, 403, 500, etc.
+            
             if (response.status === 400 && data.data) {
-                // Handle Django REST Framework validation errors
                 const apiValidationErrors: Record<string, string> = {};
-                // Flatten DRF errors into the format expected by newErrors state
                 for (const key in data.data) {
-                    // Map Django field names back to frontend field names
                     let frontendKey = key.replace(/_(\w)/g, (_, c) => c.toUpperCase());
-                    
-                    // Specific mapping for phone_number and company_name/role
                     if (key === 'phone_number') frontendKey = 'phone';
                     if (key === 'company_name') frontendKey = 'company';
                     
-                    // Use the first error message for simplicity
                     apiValidationErrors[frontendKey] = Array.isArray(data.data[key]) 
                         ? data.data[key][0] 
                         : data.data[key];
                 }
                 setErrors(prev => ({ ...prev, ...apiValidationErrors }));
             } else if (data.message) {
-                // Handle general API messages (e.g., "Failed to create user")
                  setApiError(data.message);
             } else {
-                // Fallback for unexpected errors
                 setApiError('An unknown error occurred during registration.');
             }
         }
     } catch (error) {
-        // Network or fetch-related error
         console.error('Registration API Error:', error);
         setApiError('Could not connect to the server. Please check your network.');
     } finally {
-        setIsLoading(false);
+        if (!isSuccess) {
+            setIsLoading(false);
+        }
     }
   };
 
+  // --- RENDER SUCCESS CARD (remains the same, redirecting to login) ---
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-gray via-light-green to-light-orange">
+        <Card className="p-10 financial-shadow-lg max-w-sm w-full text-center">
+          <CheckCircle className="w-16 h-16 text-primary-green mx-auto mb-6" />
+          <h2 className="text-2xl font-bold text-text-dark mb-3">Registration Successful!</h2>
+          <p className="text-text-gray mb-6">Your account has been created. You will be redirected to the login page shortly.</p>
+          <div className="flex justify-center items-center text-primary-green">
+            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+            Redirecting in 5 seconds...
+          </div>
+          <Button 
+            onClick={onSwitchToLogin} 
+            className="btn-primary w-full mt-4"
+          >
+            Go to Login Now
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // --- RENDER REGISTRATION FORM (remains the same) ---
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-gray via-light-green to-light-orange relative overflow-hidden">
-      {/* ... (Background Elements and Container remain the same) ... */}
-
+      {/* ... (All form content is unchanged) ... */}
       <div className="container mx-auto px-4 py-8 min-h-screen flex items-center justify-center">
         <div className="max-w-2xl w-full">
           <Card className="p-8 financial-shadow-lg bg-white/95 backdrop-blur-sm border-0">
@@ -173,11 +201,9 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* ... (Your existing form fields, updated to use correct error keys) ... */}
                 
-                {/* ... (Personal Information block) ... */}
+                {/* Personal Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* First Name */}
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
                     <div className="relative">
@@ -194,7 +220,6 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                     {errors.firstName && <p className="text-xs text-error">{errors.firstName}</p>}
                   </div>
 
-                  {/* Last Name */}
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Last Name</Label>
                     <div className="relative">
@@ -212,9 +237,8 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                   </div>
                 </div>
 
-                {/* ... (Contact Information block) ... */}
+                {/* Contact Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Email */}
                   <div className="space-y-2">
                     <Label htmlFor="email">Email Address</Label>
                     <div className="relative">
@@ -232,7 +256,6 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                     {errors.email && <p className="text-xs text-error">{errors.email}</p>}
                   </div>
 
-                  {/* Phone Number */}
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
                     <div className="relative">
@@ -247,14 +270,12 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                         required
                       />
                     </div>
-                    {/* Note: error key for phone number in Django is often 'phone_number' */}
                     {errors.phone && <p className="text-xs text-error">{errors.phone}</p>}
                   </div>
                 </div>
 
-                {/* ... (Business Information block) ... */}
+                {/* Business Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Company */}
                   <div className="space-y-2">
                     <Label htmlFor="company">Company (Optional)</Label>
                     <div className="relative">
@@ -270,7 +291,6 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                      {errors.company && <p className="text-xs text-error">{errors.company}</p>}
                   </div>
 
-                  {/* Role */}
                   <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
                     <Select value={formData.role} onValueChange={(value: string) => updateFormData('role', value)}>
@@ -289,9 +309,8 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                   </div>
                 </div>
 
-                {/* ... (Password Fields block) ... */}
+                {/* Password Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Password */}
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
                     <div className="relative">
@@ -316,7 +335,6 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                     {errors.password && <p className="text-xs text-error">{errors.password}</p>}
                   </div>
 
-                  {/* Confirm Password */}
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword">Confirm Password</Label>
                     <div className="relative">
@@ -377,7 +395,26 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
               </form>
 
               {/* Back to Login */}
-              {/* ... (Remains the same) ... */}
+              <div className="text-center space-y-4">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border-gray"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-text-gray">Already have an account?</span>
+                  </div>
+                </div>
+
+                <Button
+                  variant="outline"
+                  onClick={onSwitchToLogin}
+                  className="w-full border-primary-green text-primary-green hover:bg-light-green"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Sign In
+                </Button>
+              </div>
+
             </div>
           </Card>
         </div>
