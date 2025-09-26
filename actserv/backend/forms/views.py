@@ -11,7 +11,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
-
+from .tasks import *
 class FormCreateListAPIView(APIView):
     """
     FETCHING ALL FORMS 
@@ -127,7 +127,13 @@ class SubmissionCreateListAPIView(APIView):
         serializer = self.serializer_class(data = request.data)
         if serializer.is_valid():
             with transaction.atomic():
-                serializer.save()
+                submission = serializer.save(user = request.user)
+                #trigger celery async
+                notify_admin_of_submission.delay(
+                    submission.pk,
+                    submission.form.name, 
+                    request.user.email
+                )
                 return Response({'message':'Form submitted successfully', 'data':serializer.data}, status=status.HTTP_201_CREATED)
             return Resposne({'message':'Failed to submit form', 'data':serializer.errors}, status= status.HTTP_400_BAD_REQUEST)
         

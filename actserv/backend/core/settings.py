@@ -156,19 +156,20 @@ AUTH_USER_MODEL = 'authentication.CustomUser'
 # ,
 # }
 JAZZMIN_SETTINGS = {
-    # Basic settings (adjust these to your liking)
+   
     "site_title": "Financial Services Admin",
     "site_header": "Financial Services",
-    "site_brand": "FS",
-    "welcome_sign": "Welcome to the Admin Portal",
+    "site_brand": "Onboarding System",
+    "welcome_sign": "Welcome to ActServ Onboarding System Admin Portal",
     
-    # UI builder is defined here
-    "show_ui_builder": True, 
+    # # UI builder is defined here
+    # "show_ui_builder": True, 
 }
 
 JAZZMIN_UI_TWEAKS = {
     
-    "theme": "slate",
+    "theme": "yeti",
+    "dark_theme":"solar",
  
 }
 
@@ -188,3 +189,21 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = True 
+
+
+#celery configs
+CELERY_BROKER_URL = 'redis://localhost:6379/0' 
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
+#email configs
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'your.smtp.server.com' 
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your_email@example.com'
+EMAIL_HOST_PASSWORD = 'your_email_password'
+ADMINS = [('Admin Name', 'admin@yourcompany.com')] 
