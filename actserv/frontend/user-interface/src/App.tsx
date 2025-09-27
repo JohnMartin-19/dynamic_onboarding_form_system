@@ -89,16 +89,8 @@ export default function App() {
         return; 
     }
     
-    const userType: UserType = email.includes('admin') ? 'admin' : 'client';
+   
     
-    const userData: User = { 
-      email: email, 
-      userType,
-      name: `${firstName} ${lastName}`
-    };
-    
-
-    setUser(userData); 
   };
 
   const handleLogout = () => {
@@ -213,7 +205,7 @@ export default function App() {
     <LoginPage
       onLogin={handleLogin}
       onSwitchToSignup={() => setAuthState('signup')}
-      onAdminPortal={handleAdminPortal}
+      // onAdminPortal={handleAdminPortal}
     />
   );
 }
