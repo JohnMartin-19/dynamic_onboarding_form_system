@@ -125,17 +125,50 @@ class SubmissionCreateListAPIView(APIView):
    
     def post(self, request):
         serializer = self.serializer_class(data=request.data, context={'request': request})
+        data = request.data
+        print('DATAAAA:', data) 
         
+        file_fields_to_process = {}
+        for key, value in data.items():
+            # Check if the value is a file (or a list of files)
+            if hasattr(value, '__iter__') and any(hasattr(f, 'read') for f in value):
+                file_fields_to_process[key] = value
+            elif hasattr(value, 'read'): # Single file case
+                file_fields_to_process[key] = [value]
+        
+        serializer_data_copy = request.data.copy()
+        for key in file_fields_to_process.keys():
+            if key in serializer_data_copy:
+                del serializer_data_copy[key]
+
+        
+        serializer = self.serializer_class(data=serializer_data_copy, context={'request': request})
+
         if serializer.is_valid():
             try:
                 with transaction.atomic():
                     submission = serializer.save(user=request.user) 
-                    #trigger celery async
+                    for field_name, uploaded_files in file_fields_to_process.items():
+                        try:
+                            form_field_instance = Field.objects.get(form_id=submission.form_id, name=field_name)
+                        except Field.DoesNotExist:
+                            print(f"Warning: Field with name '{field_name}' not found for form ID {submission.form_id}")
+                            continue
+
+                        for uploaded_file in uploaded_files:
+                            Document.objects.create(
+                                submission=submission,
+                                field=form_field_instance,
+                                file=uploaded_file
+                            )
+                            
+                    #trigger async task
                     notify_admin_of_submission.delay(
                         submission.pk,
                         submission.form.name, 
                         request.user.email
                     )
+                    
                     return Response(
                         {'message': 'Form submitted successfully', 'data': serializer.data}, 
                         status=status.HTTP_201_CREATED
@@ -148,7 +181,8 @@ class SubmissionCreateListAPIView(APIView):
         return Response(
             {'message': 'Failed to submit form', 'data': serializer.errors}, 
             status=status.HTTP_400_BAD_REQUEST
-        )     
+        )
+    
 class SubmissionRetirieveUpdateDestroyAPIView(APIView):
     
     serializer_class = SubmissionSerializer

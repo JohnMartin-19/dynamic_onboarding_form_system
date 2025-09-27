@@ -15,8 +15,10 @@ import {
   Loader2 
 } from 'lucide-react';
 import { type Form, type FormSubmission, type FormField } from '../../types/forms'; 
+import { toast } from 'react-toastify';
 
-// 1. Define the structure of the incoming API response for type safety
+
+// --- 1. Interface Definitions ---
 interface ApiFormResponse {
   id: number;
   name: string;
@@ -40,18 +42,35 @@ interface ApiFormFieldResponse {
   created_at: string;
 }
 
+// Interface for the single submission object returned from the API
+interface ApiSubmissionResponse {
+    id: number; 
+    form: { id: number, name: string };
+    user: { id: number, email: string, first_name: string };
+    data: Record<string, any>;
+    status: 'pending' | 'review' | 'approved' | 'rejected'; 
+    submitted_at: string; 
+    updated_at: string;
+    documents: any[]; 
+}
+
+// Interface for the top-level API response wrapper (Allow data to be object, array, null, or undefined)
+interface BackendResponseWrapper {
+    message: string;
+    data: any; 
+}
+
 interface ClientPortalProps {
   onLogout: () => void;
   clientName: string;
   clientEmail: string;
-  // NOTE: accessToken prop is now primarily used to trigger re-renders, 
-  // but the token is READ directly from localStorage in the functions.
   accessToken: string; 
 }
 
-// 2. Define the API endpoints
+// --- 2. API Endpoints ---
 const FORMS_API_URL = 'http://127.0.0.1:8001/form/api/v1/forms/';
 const SUBMISSIONS_API_URL = 'http://127.0.0.1:8001/form/api/v1/submissions/'; 
+const MY_SUBMISSIONS_API_URL = 'http://127.0.0.1:8001/form/api/v1/my_submissions/';
 
 export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }: ClientPortalProps) {
   const [activeTab, setActiveTab] = useState('available');
@@ -61,76 +80,113 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
   const [loading, setLoading] = useState(true); 
   const [error, setError] = useState<string | null>(null); 
   
-  // 🛑 Removed all direct variable definitions reading localStorage to prevent stale tokens.
+  const clientSubmissions = submissions; 
 
-  const clientSubmissions = submissions.filter(s => s.clientEmail === clientEmail);
+  // --- Utility Function to get Headers ---
+  const getAuthHeaders = useCallback(() => {
+    const currentAccessToken = localStorage.getItem('access_token');
+    if (!currentAccessToken) {
+      setError("Authentication required. Please log in again.");
+      return null;
+    }
+    return {
+      'Authorization': `Bearer ${currentAccessToken}`, 
+    };
+  }, []);
 
-  // --- Data Fetching Logic (useEffect) ---
-  const fetchFormsAndSubmissions = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // ✅ Read token directly from storage to ensure it's fresh
-      const currentAccessToken = localStorage.getItem('access_token');
-      
-      if (!currentAccessToken) {
-        setLoading(false);
-        setError("Authentication required. Please log in again.");
-        return;
-      }
-      
-      // Setup authorization headers
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${currentAccessToken}`, 
-      };
 
-      // 1. Fetch Forms
-      const formsResponse = await fetch(FORMS_API_URL, { headers });
-      if (!formsResponse.ok) {
+  // --- Data Fetching Logic (Forms) ---
+  const fetchForms = useCallback(async (headers: Record<string, string>) => {
+    const formsResponse = await fetch(FORMS_API_URL, { headers });
+    if (!formsResponse.ok) {
         throw new Error(`Failed to fetch forms: ${formsResponse.statusText}`);
-      }
-      const formsData: { data: ApiFormResponse[] } = await formsResponse.json();
+    }
+    const formsData: { data: ApiFormResponse[] } = await formsResponse.json();
 
-      // 2. Map API structure to Frontend 'Form' type
-      const remappedForms: Form[] = formsData.data
+    const remappedForms: Form[] = formsData.data
         .filter(f => f.is_active) 
         .map(apiForm => ({
-          id: String(apiForm.id),
-          name: apiForm.name,
-          description: apiForm.description,
-          version: apiForm.version,
-          category: 'General', 
-          status: apiForm.is_active ? 'active' : 'inactive',
-          
-          fields: apiForm.form_fields.map(apiField => {
-            const fieldName = apiField.name;
-            
-            return ({
-              id: String(apiField.id),
-              label: fieldName.charAt(0).toUpperCase() + fieldName.slice(1).replace(/_/g, ' '),
-              name: fieldName,
-              type: apiField.type,
-              options: apiField.options,
-              isRequired: apiField.is_required,
-              order: apiField.order,
-            }) as unknown as FormField; 
-          }),
+            id: String(apiForm.id),
+            name: apiForm.name,
+            description: apiForm.description,
+            version: apiForm.version,
+            category: 'General', 
+            status: apiForm.is_active ? 'active' : 'inactive',
+            fields: apiForm.form_fields.map(apiField => {
+                const fieldName = apiField.name;
+                return ({
+                    id: String(apiField.id),
+                    label: fieldName.charAt(0).toUpperCase() + fieldName.slice(1).replace(/_/g, ' '),
+                    name: fieldName,
+                    type: apiField.type,
+                    options: apiField.options,
+                    isRequired: apiField.is_required,
+                    order: apiField.order,
+                }) as unknown as FormField; 
+            }),
         }));
-      
-      setForms(remappedForms);
-      
-    } catch (err) {
-      console.error('API Fetch Error:', err);
-      setError('Failed to load forms. Please ensure you are logged in and the server is running.');
-    } finally {
-      setLoading(false);
+    setForms(remappedForms);
+  }, []);
+  
+  // --- Data Fetching Logic (Submissions) ---
+  const fetchSubmissions = useCallback(async (headers: Record<string, string>) => {
+    const submissionsResponse = await fetch(MY_SUBMISSIONS_API_URL, { headers });
+    
+    if (!submissionsResponse.ok) {
+        const errorDetails = await submissionsResponse.text();
+        console.error("Submission fetch failed with status:", submissionsResponse.status, "Details:", errorDetails);
+        throw new Error(`Failed to fetch submissions: ${submissionsResponse.status} ${submissionsResponse.statusText}`);
     }
-  }, [accessToken]); // Keep accessToken in dependency array to refetch on login state change
+    
+    const fullApiResponse: BackendResponseWrapper = await submissionsResponse.json();
+    
+    // CRITICAL FIX: Check if 'data' is present AND is an array.
+    const apiData = fullApiResponse.data;
+    const submissionArray: ApiSubmissionResponse[] = (apiData && Array.isArray(apiData)) ? apiData : [];
+    
+    const remappedSubmissions: FormSubmission[] = submissionArray.map(apiSubmission => ({
+        id: String(apiSubmission.id),
+        formId: String(apiSubmission.form.id),
+        formName: apiSubmission.form.name,
+        clientName: apiSubmission.user.first_name || clientName, 
+        clientEmail: apiSubmission.user.email,
+        data: apiSubmission.data,
+        status: apiSubmission.status,
+        submittedAt: new Date(apiSubmission.submitted_at),
+        files: {} 
+    }));
 
+    setSubmissions(remappedSubmissions);
+  }, [clientName]);
+
+
+  // --- Combined Fetch Effect ---
   useEffect(() => {
-    fetchFormsAndSubmissions();
-  }, [fetchFormsAndSubmissions]);
+    const combinedFetch = async () => {
+        setLoading(true);
+        setError(null);
+        
+        const headers = getAuthHeaders();
+        if (!headers) {
+            setLoading(false);
+            return;
+        }
+
+        try {
+            await Promise.all([
+                fetchForms(headers), 
+                fetchSubmissions(headers) 
+            ]);
+        } catch (err) {
+            console.error('Combined Fetch Error:', err);
+            setError(`Failed to load portal data. ${err instanceof Error ? err.message : 'Unknown error'}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    combinedFetch();
+  }, [getAuthHeaders, fetchForms, fetchSubmissions, accessToken]); 
   // --- End Data Fetching Logic ---
 
 
@@ -138,7 +194,7 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
     setSelectedForm(form);
   };
 
-  // --- Form Submission Logic ---
+
   const handleSubmitForm = async (formId: string, data: Record<string, any>, files: Record<string, File[]>) => {
     const form = forms.find(f => f.id === formId);
     if (!form) return;
@@ -152,44 +208,47 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
           throw new Error("Authentication failed: Access token not found in storage.");
       }
         
-      // Use FormData for submission (required for files, but good practice for forms)
       const formData = new FormData();
       formData.append('form_id', formId);
-      formData.append('client_email', clientEmail);
-      formData.append('client_name', clientName);
+      
+      // 1. Append non-file data as a JSON string
       formData.append('data', JSON.stringify(data)); 
       
-      // NOTE: File handling logic would go here
+    
+      for (const fieldName in files) {
+          if (files.hasOwnProperty(fieldName)) {
+              // Handle multiple files for a single field if necessary (File[] is used here)
+              files[fieldName].forEach((file: File) => {
+                  // Append the file using the form field's name as the key
+                  formData.append(fieldName, file); 
+              });
+          }
+      }
       
       const submissionResponse = await fetch(SUBMISSIONS_API_URL, {
         method: 'POST',
         headers: {
           
           'Authorization': `Bearer ${currentAccessToken}`, 
-          
         },
-        body: formData,
+        body: formData, 
       });
-
+      console.log('DATA SENT:',formData)
       if (!submissionResponse.ok) {
          const errorText = await submissionResponse.text();
          throw new Error(`Submission failed: ${submissionResponse.status} - ${errorText}`);
       }
+      toast.success('Form submitted successfully!', {
+        position: 'top-right',
+        autoClose: 5000,
+      });
       
-      // Simulate local update after successful submission
-      const newSubmission: FormSubmission = {
-        id: Math.random().toString(36).substr(2, 9),
-        formId,
-        formName: form.name,
-        clientName,
-        clientEmail,
-        data,
-        files,
-        status: 'pending', 
-        submittedAt: new Date()
-      };
+      // After successful POST, re-fetch submissions to update the list
+      const headers = getAuthHeaders();
+      if (headers) {
+        await fetchSubmissions(headers);
+      }
 
-      setSubmissions(prev => [...prev, newSubmission]);
       setSelectedForm(null);
       setActiveTab('submissions');
       
@@ -200,7 +259,6 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
       setLoading(false);
     }
   };
-  // --- End Form Submission Logic ---
   
   // ... (getStatusIcon and getStatusColor helper functions) ...
   const getStatusIcon = (status: string) => {
@@ -401,7 +459,7 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
               ))}
             </div>
 
-            {clientSubmissions.length === 0 && (
+            {clientSubmissions.length === 0 && !loading && !error && (
               <Card className="financial-card text-center py-12">
                 <Clock className="w-12 h-12 text-text-gray mx-auto mb-4" />
                 <h3 className="mb-2">No Submissions Yet</h3>
@@ -409,6 +467,13 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
                 <Button onClick={() => setActiveTab('available')} className="btn-primary">
                   Browse Available Forms
                 </Button>
+              </Card>
+            )}
+            
+            {loading && activeTab === 'submissions' && (
+               <Card className="financial-card text-center py-12">
+                <Loader2 className="w-8 h-8 text-primary-green mx-auto mb-4 animate-spin" />
+                <p className="text-text-gray">Loading your submissions...</p>
               </Card>
             )}
           </TabsContent>
