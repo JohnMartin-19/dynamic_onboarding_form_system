@@ -77,3 +77,6 @@ class Document(models.Model):
 
     class Meta:
         ordering = ['uploaded_at']
+        
+    def __str__(self):
+        return f'{self.file} was uploaded at {self.uploaded_at}'
