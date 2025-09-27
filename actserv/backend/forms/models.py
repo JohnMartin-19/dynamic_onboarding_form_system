@@ -41,6 +41,8 @@ class Field(models.Model):
     class Meta:
         unique_together = ("form","name")
         ordering = ['form','name']
+    def __str__(self):
+        return self.name
         
 #holds client data/
 class Submission(models.Model):
