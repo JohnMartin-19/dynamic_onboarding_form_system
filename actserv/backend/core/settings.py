@@ -174,8 +174,8 @@ JAZZMIN_UI_TWEAKS = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "ERP Multi-Tenant APIs",
-    "DESCRIPTION": "API documentation for the ERP Management System",
+    "TITLE": "Onboading System APIs",
+    "DESCRIPTION": "API documentation for the Oboarding  System",
     "VERSION": "1.0.0",
 }
 
@@ -185,11 +185,13 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
     "SIGNING_KEY": SECRET_KEY,
     "BLACKLIST_AFTER_ROTATION": True,
-    'TOKEN_OBTAIN_SERIALIZER': 'authentication.serializers.CustomTokenObtainPairSerializer',
+    "TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
 }
 
 CORS_ALLOW_ALL_ORIGINS = True 
 
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend" # new
+SITE_ID = 1
 
 #celery configs
 CELERY_BROKER_URL = 'redis://localhost:6379/0' 

@@ -5,21 +5,20 @@ import { Label } from './ui/label';
 import { Card } from './ui/card';
 import { 
   Lock, 
-  Mail, 
+  User, // Changed from Mail to User icon
   Eye, 
   EyeOff, 
   Building2, 
   TrendingUp, 
   Shield,
   Users,
-  AlertTriangle // Added for error display
+  AlertTriangle 
 } from 'lucide-react';
 
 interface LoginPageProps {
-  // onLogin should now handle receiving and storing tokens
   onLogin: (accessToken: string, refreshToken: string, userType?: 'admin' | 'client') => void;
   onSwitchToSignup: () => void;
-  onAdminPortal?: () => void;
+  // onAdminPortal signature changed to remove the function, as it now performs a redirect
   isAdminMode?: boolean;
   onBackToLogin?: () => void;
 }
@@ -27,18 +26,29 @@ interface LoginPageProps {
 // 1. Define the API endpoint for login
 const API_URL = 'http://127.0.0.1:8001/auth/api/v1/login/';
 
-export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal, isAdminMode = false, onBackToLogin }: LoginPageProps) {
-  const [email, setEmail] = useState('');
+// 2. Define the Admin Portal URL
+const ADMIN_PORTAL_URL = 'http://127.0.0.1:8001/admin/login/?next=/admin/';
+
+export function LoginPage({ onLogin, onSwitchToSignup, isAdminMode = false, onBackToLogin }: LoginPageProps) {
+  // --- CHANGE 1: Use 'username' state instead of 'email' ---
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // --- NEW FUNCTION: Handles the redirect to Django Admin ---
+  const handleAdminPortalRedirect = () => {
+    // Perform an external redirect to the Django Admin login page
+    window.location.href = ADMIN_PORTAL_URL;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
-    if (!email || !password) {
+    // --- CHANGE 2: Check for username ---
+    if (!username || !password) {
       setError('Please fill in all fields');
       return;
     }
@@ -51,8 +61,9 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal, isAdminMod
             headers: {
                 'Content-Type': 'application/json',
             },
+            // --- CHANGE 3: Send 'username' instead of 'email' in the payload ---
             body: JSON.stringify({
-                email: email,
+                username: username, // Assuming your Django API expects 'username' now
                 password: password,
             }),
         });
@@ -60,33 +71,27 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal, isAdminMod
         const data = await response.json();
 
         if (response.ok) {
-            // Success: HTTP 200 OK. Data contains 'access' and 'refresh' tokens.
             const { access, refresh } = data;
             
-            // Determine user type (you'll likely need to fetch user details later, 
-            // but for now, keep the email-based mock logic or simplify)
-            const userType = isAdminMode ? 'admin' : (email.includes('admin') ? 'admin' : 'client');
+            // Simplified user type determination for demonstration
+            const userType = isAdminMode ? 'admin' : (username.includes('admin') ? 'admin' : 'client');
             
-            // Pass the tokens to the parent component for storage (e.g., localStorage/Redux)
             onLogin(access, refresh, userType);
 
         } else {
-            // API Error: HTTP 401 Unauthorized (No active account/Invalid credentials)
             let errorMessage = 'Login failed. Please check your credentials.';
             
             if (data.detail) {
-                // DRF Simple JWT error message (e.g., "No active account found...")
                 errorMessage = data.detail;
-            } else if (data.email || data.password) {
-                // General validation error
-                errorMessage = data.email ? data.email[0] : (data.password ? data.password[0] : errorMessage);
+            } else if (data.username || data.password) {
+                // Adjusting validation error keys
+                errorMessage = data.username ? data.username[0] : (data.password ? data.password[0] : errorMessage);
             }
             
             setError(errorMessage);
         }
 
     } catch (apiError) {
-        // Network or fetch-related error
         console.error('Login API Error:', apiError);
         setError('Could not connect to the server. Please check your network.');
     } finally {
@@ -97,8 +102,6 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal, isAdminMod
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-gray via-light-green to-light-orange relative overflow-hidden">
      
-      {/* ... (Admin/Back to Login Button remains the same) ... */}
-
       <div className="absolute top-6 right-6 z-10">
         {isAdminMode && onBackToLogin ? (
           <Button 
@@ -109,27 +112,25 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal, isAdminMod
             ← Back to Login
           </Button>
         ) : (
-          onAdminPortal && (
-            <Button 
-              onClick={onAdminPortal}
-              variant="outline"
-              className="bg-white/90 backdrop-blur-sm border-primary-green text-primary-green hover:bg-primary-green hover:text-white transition-all duration-300"
-            >
-              <Users className="w-4 h-4 mr-2" />
-              Admin Portal
-            </Button>
-          )
+          // --- CHANGE 4: Use the new redirect function ---
+          <Button 
+            onClick={handleAdminPortalRedirect} // Use the new redirect handler
+            variant="outline"
+            className="bg-white/90 backdrop-blur-sm border-primary-green text-primary-green hover:bg-primary-green hover:text-white transition-all duration-300"
+          >
+            <Users className="w-4 h-4 mr-2" />
+            Admin Portal
+          </Button>
         )}
       </div>
-
-      {/* ... (Background Elements and Hero Content remains the same) ... */}
 
       <div className="container mx-auto px-4 py-8 min-h-screen flex items-center justify-center">
         <div className="grid lg:grid-cols-2 gap-12 max-w-6xl w-full items-center">
           
-          {/* Left Side - Hero Content */}
+          {/* Left Side - Hero Content (no changes here) */}
           <div className="space-y-8">
             <div className="space-y-6">
+              {/* ... (Logo and main title content) ... */}
               <div className="flex items-center space-x-3">
                 <div className="p-3 bg-primary-green rounded-xl">
                   <Building2 className="w-8 h-8 text-white" />
@@ -177,7 +178,7 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal, isAdminMod
             <div className="relative">
               <div className="rounded-2xl overflow-hidden shadow-2xl border-2 border-white/50">
                 <img
-                  src="https://images.unsplash.com/photo-1733503747506-773e56e4078f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaW5hbmNpYWwlMjB0ZWNobm9sb2d5JTIwb2ZmaWNlJTIwbW9kZXJufGVufDF8fHx8MTc1ODYzMjc5OXww&ixlib=rb-4.1.0&q=80&w=1080"
+                  src="https://images.unsplash.com/photo-1733503747506-773e56e4078f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaW5hbmNpYWwlMjB0ZWNobm9sb2d5JTIwb2ZmaWNlJTIwbW9kZXJnfGVufDF8fHx8MTc1ODYzMjc5OXww&ixlib=rb-4.1.0&q=80&w=1080"
                   alt="Modern financial technology office"
                   className="w-full h-64 object-cover"
                 />
@@ -202,15 +203,16 @@ export function LoginPage({ onLogin, onSwitchToSignup, onAdminPortal, isAdminMod
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
+                    {/* --- CHANGE 5: Label and Input for Username --- */}
+                    <Label htmlFor="username">Username</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary-green w-5 h-5" />
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary-green w-5 h-5" /> {/* User Icon */}
                       <Input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter your email"
+                        id="username" // Changed ID to username
+                        type="text" // Changed type from email to text
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)} // Updated state handler
+                        placeholder="Enter your username" // Updated placeholder
                         className="financial-input pl-11"
                         required
                       />

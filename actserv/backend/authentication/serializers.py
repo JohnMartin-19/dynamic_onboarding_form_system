@@ -8,13 +8,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = [
             'first_name', 'last_name', 'email', 'phone_number',
-            'company_name', 'role', 'password'
+            'company_name', 'role', 'password','username',
         ]
 
     
     def create(self, validated_data):
         password = validated_data.pop('password')
-        username = validated_data.get('email')
+        username = validated_data.get('username')
         user = CustomUser.objects.create_user(
             password=password,
             username = username, 

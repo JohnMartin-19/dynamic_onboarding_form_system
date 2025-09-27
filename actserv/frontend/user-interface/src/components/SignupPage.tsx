@@ -11,17 +11,15 @@ import {
   Mail, 
   Eye, 
   EyeOff, 
-  User, 
+  User, // Used for username
   Building2,
   Phone,
   CheckCircle,
   AlertTriangle,
-  Loader2 // Used for the redirect spinner
+  Loader2 
 } from 'lucide-react';
 
 interface SignupPageProps {
-  // We keep onSignup to allow App.tsx to handle potential data logging, 
-  // but we remove the logic that logs the user in immediately.
   onSignup: (userData: any) => void;
   onSwitchToLogin: () => void;
 }
@@ -32,6 +30,8 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    // --- CHANGE 1: Add username field to state ---
+    username: '', 
     email: '',
     phone: '',
     company: '',
@@ -60,6 +60,10 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
 
     if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
     if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
+    // --- CHANGE 2: Add username validation ---
+    if (!formData.username.trim()) newErrors.username = 'Username is required';
+    if (formData.username.trim().length < 3) newErrors.username = 'Username must be at least 3 characters';
+    
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Please enter a valid email';
     if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
@@ -81,7 +85,9 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
     setApiError(null);
     setIsSuccess(false);
 
+    // --- CHANGE 3: Include username in the API payload ---
     const payload = {
+        username: formData.username, // New field for the API
         first_name: formData.firstName,
         last_name: formData.lastName,
         email: formData.email,
@@ -105,11 +111,6 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
 
         if (response.ok) {
             
-            // ❌ REMOVED: The logic here that used to log the user in immediately
-            // onSignup(data); // <-- This line is removed or modified to only log/process without setting `user` in App.tsx
-
-            // ACTION: We still call onSignup in case the parent component (App.tsx)
-            // wants to handle the data, but we now know it won't trigger login.
             onSignup(data); 
 
             setIsSuccess(true); 
@@ -124,9 +125,11 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
             if (response.status === 400 && data.data) {
                 const apiValidationErrors: Record<string, string> = {};
                 for (const key in data.data) {
-                    let frontendKey = key.replace(/_(\w)/g, (_, c) => c.toUpperCase());
+                    let frontendKey = key.toLowerCase();
                     if (key === 'phone_number') frontendKey = 'phone';
                     if (key === 'company_name') frontendKey = 'company';
+                    // --- Handle username error key from API ---
+                    if (key === 'username') frontendKey = 'username';
                     
                     apiValidationErrors[frontendKey] = Array.isArray(data.data[key]) 
                         ? data.data[key][0] 
@@ -149,7 +152,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
     }
   };
 
-  // --- RENDER SUCCESS CARD (remains the same, redirecting to login) ---
+  // --- RENDER SUCCESS CARD (no changes) ---
   if (isSuccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-gray via-light-green to-light-orange">
@@ -172,15 +175,14 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
     );
   }
 
-  // --- RENDER REGISTRATION FORM (remains the same) ---
+  // --- RENDER REGISTRATION FORM ---
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-gray via-light-green to-light-orange relative overflow-hidden">
-      {/* ... (All form content is unchanged) ... */}
       <div className="container mx-auto px-4 py-8 min-h-screen flex items-center justify-center">
         <div className="max-w-2xl w-full">
           <Card className="p-8 financial-shadow-lg bg-white/95 backdrop-blur-sm border-0">
-            <div className="space-y-8">
-              {/* Header */}
+            <div className="space-y-6"> {/* Changed space-y-8 to 6 for better spacing */}
+              {/* Header (no changes) */}
               <div className="text-center">
                 <div className="flex items-center justify-center space-x-3 mb-4">
                   <div className="p-2 bg-primary-green rounded-lg">
@@ -192,7 +194,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                 <p className="text-text-gray mt-2">Join thousands of businesses streamlining their financial processes</p>
               </div>
               
-              {/* General API Error Display */}
+              {/* General API Error Display (no changes) */}
               {apiError && (
                 <div className="flex items-center p-3 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
                     <AlertTriangle className="w-5 h-5 mr-2" />
@@ -203,7 +205,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
               <form onSubmit={handleSubmit} className="space-y-6">
                 
                 {/* Personal Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
                     <div className="relative">
@@ -212,7 +214,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                         id="firstName"
                         value={formData.firstName}
                         onChange={(e) => updateFormData('firstName', e.target.value)}
-                        placeholder="Enter your first name"
+                        placeholder="First name"
                         className={`financial-input pl-11 ${errors.firstName ? 'border-error' : ''}`}
                         required
                       />
@@ -228,16 +230,35 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                         id="lastName"
                         value={formData.lastName}
                         onChange={(e) => updateFormData('lastName', e.target.value)}
-                        placeholder="Enter your last name"
+                        placeholder="Last name"
                         className={`financial-input pl-11 ${errors.lastName ? 'border-error' : ''}`}
                         required
                       />
                     </div>
                     {errors.lastName && <p className="text-xs text-error">{errors.lastName}</p>}
                   </div>
+
+                  {/* --- CHANGE 4: Username Input Field (New) --- */}
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary-green w-5 h-5" />
+                      <Input
+                        id="username"
+                        type="text"
+                        value={formData.username}
+                        onChange={(e) => updateFormData('username', e.target.value)}
+                        placeholder="Choose a username"
+                        className={`financial-input pl-11 ${errors.username ? 'border-error' : ''}`}
+                        required
+                      />
+                    </div>
+                    {errors.username && <p className="text-xs text-error">{errors.username}</p>}
+                  </div>
                 </div>
 
-                {/* Contact Information */}
+
+                {/* Contact Information (Same structure, but adjusted layout for new username field) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email Address</Label>
@@ -274,7 +295,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                   </div>
                 </div>
 
-                {/* Business Information */}
+                {/* Business Information (no changes) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="company">Company (Optional)</Label>
@@ -309,7 +330,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                   </div>
                 </div>
 
-                {/* Password Fields */}
+                {/* Password Fields (no changes) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
@@ -360,7 +381,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                   </div>
                 </div>
                 
-                {/* Terms and Conditions (kept for completeness) */}
+                {/* Terms and Conditions & Submit Button (no changes) */}
                 <div className="flex items-center space-x-2">
                   <Checkbox 
                     id="terms" 
@@ -374,7 +395,6 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                 </div>
                 {errors.terms && <p className="text-xs text-error">{errors.terms}</p>}
                 
-                {/* Submit Button */}
                 <Button 
                   type="submit" 
                   disabled={isLoading}
@@ -394,7 +414,7 @@ export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
                 </Button>
               </form>
 
-              {/* Back to Login */}
+              {/* Back to Login (no changes) */}
               <div className="text-center space-y-4">
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
