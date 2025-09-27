@@ -9,32 +9,50 @@ class CustomUserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['id', 'email', 'first_name', 'last_name', 'phone_number', 'company_name', 'role', 'is_active', 'is_staff', 'date_joined']
         read_only_fields = ['date_joined', 'is_active', 'is_staff']
+    
+class MinimalFormSerializer(serializers.ModelSerializer):
+    """Serializer used inside FieldSerializer to prevent recursion."""
+    class Meta:
+        model = Form
+        fields = ['id', 'name', 'version']    
+
 class FormSerializer(serializers.ModelSerializer):
     created_by = CustomUserSerializer(read_only=True) 
-    fields = serializers.SerializerMethodField()
+    form_fields = serializers.SerializerMethodField()
     class Meta:
-        models = Form
+        model = Form
         fields = ['id','name','description','created_by','version',
-                  'is_active','created_at','updated_at']
-        read_only_fields = ['created_at','udated_at']
+                  'is_active','created_at','updated_at','form_fields']
+        read_only_fields = ['created_at','updated_at']
         
-    def get_fields(self, obj):
+    def get_form_fields(self, obj):
         fields = obj.fields.all()
         return FieldSerializer(fields, many=True, context=self.context).data
 class FieldSerializer(serializers.ModelSerializer):
-    form = FormSerializer(read_only=True)
+    form = serializers.SerializerMethodField(read_only=True) 
+    
     class Meta:
-        models = Field
+        model = Field
         fields = ['id','form','name','type',
                   'options','is_required','order','created_at']
         read_only_fields = ['created_at']
+    
+    def get_form(self, obj):
+        """
+        Returns a partial representation of the Form using the MinimalFormSerializer.
+        """
+        form_instance = obj.form # obj.form is the related Form object
+        
+        # Instantiate the minimal serializer and return its data
+        return MinimalFormSerializer(form_instance, context=self.context).data
+
         
 
 class DocumentSerializer(serializers.ModelSerializer):
    
     field_id = serializers.IntegerField(write_only = True)
     class Meta:
-        models = Document
+        model = Document
         fields = ['id','submission','field','field_id','file','updated_at']
         read_only_fields = ['updated_at']
   
@@ -46,7 +64,7 @@ class SubmissionSerializer(serializers.ModelSerializer):
     user_id = serializers.HiddenField(default=serializers.CurrentUserDefault())
     
     class Meta:
-        models = Submission
+        model = Submission
         fields = ['id','form','user','form_id', 'user_id','data',
                   'status','submitted_at','updated_at']
         read_only_fields = ['submitted_at','updated_at']
