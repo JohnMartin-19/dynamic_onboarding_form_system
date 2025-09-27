@@ -202,9 +202,13 @@ CELERY_TIMEZONE = 'UTC'
 
 #email configs
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'your.smtp.server.com' 
+EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'your_email@example.com'
-EMAIL_HOST_PASSWORD = 'your_email_password'
-ADMINS = [('Admin Name', 'admin@yourcompany.com')] 
+EMAIL_HOST_USER = 'johnnkonge2020@gmail.com'
+EMAIL_HOST_PASSWORD = '38518046' 
+EMAIL_USE_TLS = True 
+DEFAULT_FROM_EMAIL = 'johnnkonge2020@gmail.com'
+
+ADMINS = [
+    ('Admin Name', 'johnnkonge2020@gmail.com'),
+]
