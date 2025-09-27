@@ -41,7 +41,7 @@ class FieldSerializer(serializers.ModelSerializer):
         """
         Returns a partial representation of the Form using the MinimalFormSerializer.
         """
-        form_instance = obj.form # obj.form is the related Form object
+        form_instance = obj.form
         
         # Instantiate the minimal serializer and return its data
         return MinimalFormSerializer(form_instance, context=self.context).data
@@ -59,25 +59,24 @@ class DocumentSerializer(serializers.ModelSerializer):
 class SubmissionSerializer(serializers.ModelSerializer):
     form = FormSerializer(read_only=True)
     user = CustomUserSerializer(read_only = True)
-    documents = DocumentSerializer(many=True)
+    documents = DocumentSerializer(many=True, required = False)
     form_id = serializers.IntegerField(write_only=True)
-    user_id = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    
+   
     class Meta:
         model = Submission
-        fields = ['id','form','user','form_id', 'user_id','data',
-                  'status','submitted_at','updated_at']
+        fields = ['id','form','user','form_id','data',
+                  'status','submitted_at','updated_at','documents']
         read_only_fields = ['submitted_at','updated_at']
         
     def create(self, validated_data):
         
         document_data = validated_data.pop('documents', [])
         form_id = validated_data.pop('form_id')
-        user_id = validated_data.pop('user_id')
-       
+        user_instance = validated_data.pop('user')
+        
         submission = Submission.objects.create(
             form_id=form_id,
-            user=user_id,
+            user=user_instance,
             **validated_data
         )
         
