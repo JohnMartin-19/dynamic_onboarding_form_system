@@ -124,19 +124,31 @@ class SubmissionCreateListAPIView(APIView):
         return Response({'message':'Success', 'data':serializer.data}, status=status.HTTP_200_OK)
    
     def post(self, request):
-        serializer = self.serializer_class(data = request.data)
-        if serializer.is_valid():
-            with transaction.atomic():
-                submission = serializer.save(user = request.user)
-                #trigger celery async
-                notify_admin_of_submission.delay(
-                    submission.pk,
-                    submission.form.name, 
-                    request.user.email
-                )
-                return Response({'message':'Form submitted successfully', 'data':serializer.data}, status=status.HTTP_201_CREATED)
-            return Resposne({'message':'Failed to submit form', 'data':serializer.errors}, status= status.HTTP_400_BAD_REQUEST)
+        serializer = self.serializer_class(data=request.data, context={'request': request})
         
+        if serializer.is_valid():
+            try:
+                with transaction.atomic():
+                    submission = serializer.save(user=request.user) 
+                    #trigger celery async
+                    notify_admin_of_submission.delay(
+                        submission.pk,
+                        submission.form.name, 
+                        request.user.email
+                    )
+                    return Response(
+                        {'message': 'Form submitted successfully', 'data': serializer.data}, 
+                        status=status.HTTP_201_CREATED
+                    )
+            except Exception as e:
+                return Response(
+                    {'message': 'An internal error occurred during submission', 'error': str(e)}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        return Response(
+            {'message': 'Failed to submit form', 'data': serializer.errors}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )     
 class SubmissionRetirieveUpdateDestroyAPIView(APIView):
     
     serializer_class = SubmissionSerializer

@@ -169,10 +169,10 @@ export default function App() {
           <AdminDashboard onLogout={handleLogout} />
         ) : (
           <ClientPortal 
-            onLogout={handleLogout} 
-            clientName={displayName} 
-            clientEmail={user.email} 
-          />
+              onLogout={handleLogout}
+              clientName={displayName}
+              clientEmail={user.email} 
+              accessToken={''}          />
         )}
       </div>
     );

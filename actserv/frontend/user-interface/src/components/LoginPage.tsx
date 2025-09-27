@@ -72,7 +72,7 @@ export function LoginPage({ onLogin, onSwitchToSignup, isAdminMode = false, onBa
 
         if (response.ok) {
             const { access, refresh } = data;
-            
+            localStorage.setItem('access_token',access)
             // Simplified user type determination for demonstration
             const userType = isAdminMode ? 'admin' : (username.includes('admin') ? 'admin' : 'client');
             
