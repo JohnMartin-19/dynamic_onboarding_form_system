@@ -53,8 +53,8 @@ class DocumentSerializer(serializers.ModelSerializer):
     field_id = serializers.IntegerField(write_only = True)
     class Meta:
         model = Document
-        fields = ['id','submission','field','field_id','file','updated_at']
-        read_only_fields = ['updated_at']
+        fields = ['id','submission','field','field_id','file','uploaded_at']
+        read_only_fields = ['uploaded_at']
   
 class SubmissionSerializer(serializers.ModelSerializer):
     form = FormSerializer(read_only=True)
