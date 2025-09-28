@@ -11,8 +11,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from datetime import timedelta
+import os
 from pathlib import Path
-
+from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -201,14 +202,20 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 
 #email configs
+# --- EMAIL CONFIGURATION ---
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
-EMAIL_HOST_USER = ''
-EMAIL_HOST_PASSWORD = '' 
 EMAIL_USE_TLS = True 
-DEFAULT_FROM_EMAIL = ''
 
-ADMINS = [
-    ('Admin Name', ''),
-]
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
+# --- ADMINS CONFIGURATION ---
+# Emails listed here receive output from mail_admins()
+ADMINS = config('ADMIN')
+
+# The address that receives broken link emails and other miscellaneous error notifications
+SERVER_EMAIL = DEFAULT_FROM_EMAIL

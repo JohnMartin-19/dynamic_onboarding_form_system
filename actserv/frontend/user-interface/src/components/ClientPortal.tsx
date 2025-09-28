@@ -111,7 +111,7 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
                 name: apiForm.name,
                 description: apiForm.description,
                 version: apiForm.version,
-                category: 'General', 
+                category: apiForm.name, 
                 status: apiForm.is_active ? 'active' : 'inactive',
                 fields: apiForm.form_fields.map(apiField => {
                     const fieldName = apiField.name;

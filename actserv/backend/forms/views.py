@@ -161,7 +161,7 @@ class SubmissionCreateListAPIView(APIView):
                                 field=form_field_instance,
                                 file=uploaded_file
                             )
-                        notify_admin_of_submission.delay(
+                    notify_admin_of_submission.delay(
                         submission_id=submission.id,
                         form_name=submission.form.name, 
                         client_email=request.user.email
