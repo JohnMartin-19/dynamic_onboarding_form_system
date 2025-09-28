@@ -12,6 +12,7 @@ from django.db import transaction
 from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from .tasks import *
+
 class FormCreateListAPIView(APIView):
     """
     FETCHING ALL FORMS 
@@ -127,41 +128,25 @@ class SubmissionCreateListAPIView(APIView):
        
         data = request.data
         print('DATAAAA:', data)
-        
-        # 1. Safely extract non-file data for the SubmissionSerializer
-        # We create a new dictionary containing only the keys the serializer needs (form_id, data)
-        # request.data.get() safely retrieves only the value without deep-copying file handlers.
         serializer_input_data = {
             'form_id': data.get('form_id'),
             'data': data.get('data') 
-            # Add any other non-file fields your SubmissionSerializer needs
         }
 
         serializer = self.serializer_class(data=serializer_input_data, context={'request': request})
-        
-        # 2. Prepare to extract file fields separately
-        # DRF's request.data['key'] is safe to use for file fields.
         file_fields_to_process = {}
         
-        # NOTE: We can't use request.data.keys() because we need to check if the value is a file.
-        # We'll use the specific field name 'Image' based on your QueryDict:
+       
         if 'Image' in data:
-            # request.data.getlist('Image') is safer for QueryDicts/MultiValueDicts
+            
             file_fields_to_process['Image'] = data.getlist('Image') 
-            # You would add similar checks for other potential file fields (e.g., 'PDF')
 
         if serializer.is_valid():
             try:
                 with transaction.atomic():
-                    # 3. Save the Submission (handles form_id and JSON 'data' field)
-                    submission = serializer.save(user=request.user) 
-                    
-                    # 4. Handle File Uploads and create Document entries
+                    submission = serializer.save(user=request.user)
                     for field_name, uploaded_files in file_fields_to_process.items():
-                        
-                        # Find the Field object corresponding to the name ('Image')
                         try:
-                            # IMPORTANT: Ensure 'Image' exists in your Field model for this form
                             form_field_instance = Field.objects.get(
                                 form_id=submission.form_id, 
                                 name=field_name
@@ -176,22 +161,16 @@ class SubmissionCreateListAPIView(APIView):
                                 field=form_field_instance,
                                 file=uploaded_file
                             )
-                            
-                    # Trigger async task
-                    # notify_admin_of_submission.delay(submission.pk, submission.form.name, request.user.email)
-                    
+                           
                     return Response(
                         {'message': 'Form submitted successfully', 'data': serializer.data}, 
                         status=status.HTTP_201_CREATED
                     )
             except Exception as e:
-                # Catch specific exceptions (e.g., IntegrityError) for better error messages
                 return Response(
                     {'message': 'An internal error occurred during submission', 'error': str(e)}, 
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-        
-        # 5. Return validation errors
         return Response(
             {'message': 'Failed to submit form', 'data': serializer.errors}, 
             status=status.HTTP_400_BAD_REQUEST
