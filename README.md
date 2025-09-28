@@ -1,66 +1,106 @@
 Creative Dynamic Onboarding Form System
+A flexible, secure, and scalable Dynamic Form Platform built for financial services firms to manage customer onboarding (KYC, loans, investments) with full compliance and operational agility.
 
-The Creative Dynamic Onboarding Form System is a flexible and scalable platform designed to streamline the customer onboarding process for financial services firms. Its primary goal is to simplify the collection of critical information—such as KYC details, loan applications, and investment declarations—while ensuring compliance, security, and operational efficiency.
+## Features
+** 💻 Client Portal & Submission **
+Dynamic Form Rendering - Clients see forms generated on-the-fly based on the Admin's configuration, including conditional fields.
 
- Key Features
-📝 Dynamic Form Builder
+Double Submission Prevention - Forms are instantly marked as completed and disabled on the client dashboard after submission to prevent double entry.
 
-Create, customize, and manage onboarding forms without developer intervention.
+Secure Access (JWT) - All client actions (viewing forms, submitting data, viewing history) are protected by JSON Web Token (JWT) authentication.
 
-Supports a wide range of input types: text, dropdowns, checkboxes, file uploads, and digital signatures.
+Submission History - A dedicated tab allows clients to view all their submitted forms and their current status.
 
-Built-in conditional logic and validation rules (e.g., show/hide fields, mandatory fields, data format enforcement).
+⚙️ Administrative Agility
+Admin Setup (Jazzmin) - Uses a customized Django Admin (Jazzmin UI) for a clean, agile way for non-developers to create and manage forms and fields.
 
-📂 Document Upload & Management
+API-First Configuration - Admins define form structure and rules using the system's underlying API model, supporting complex business logic without code changes.
 
-Secure upload of supporting documents (ID scans, proof of income, contracts).
+Role-Based Access - Admin endpoints (CRUD on forms/fields, viewing all submissions) are protected by IsAdminUser permissioning.
 
-Encrypted storage with role-based access control.
+💾 Data & File Management
+JSONB Flexibility - Submission data is stored in PostgreSQL JSONB fields, ensuring that old submissions remain intact even when the form structure evolves over time.
 
-Automatic tagging and linking of documents to customer profiles.
+Cloud File Offloading - Large client documents (ID, proof of income) are stored in AWS S3 to prevent database bloat, ensuring high performance and data durability.
 
-🔔 Asynchronous Notifications
+Auditability - Submission records track which form version was used, aiding compliance and auditing.
 
-Real-time alerts to administrators when new submissions are received.
+🔔 Asynchronous Workflow
+Instant Client Feedback - Uses toast.success for non-intrusive, immediate success notifications upon submission.
 
-Configurable notification channels: email, dashboard, Slack, or Microsoft Teams.
+Decoupled Notifications - Celery instantly queues a task to notify administrators via Email (SMTP/Gmail) when a new submission arrives, guaranteeing low API submission latency.
 
-Submission tracking with status updates (pending review, approved, rejected).
+## Tech Stack
 
-📈 Scalability & Extensibility
 
-Handles an evolving number of forms, fields, and business rules.
+Getting Started
+This project is a multi-repo/monorepo candidate (Frontend/Backend) designed to be run concurrently.
 
-Modular architecture allows seamless integration of new workflows (e.g., investment onboarding, loan extensions).
+Prerequisites
+Python 3.10+ and virtual environment (venv)
 
-API support for third-party integrations (CRM, compliance systems, core banking platforms).
+Node.js 18+ for the Next.js frontend
 
-🔐 User Experience & Security
+PostgreSQL (or ability to run Django with SQLite for local testing)
 
-Mobile-friendly, intuitive form-filling interface for clients.
+Redis/RabbitMQ (for running Celery)
 
-Multi-step guided onboarding with progress tracking.
+Backend (Django/DRF) Installation
+Clone the repository
 
-Strong authentication, end-to-end encryption, and compliance with financial data regulations (GDPR, PCI DSS, local banking compliance).
+Bash
 
-💡 Why This Approach?
+git clone <repository-url>
+cd actserv/backend
+Set up the Python environment
 
-Financial services operate in a rapidly changing regulatory and business environment, where onboarding requirements evolve frequently. This system is built to be:
+Bash
 
-Future-proof: Forms are decoupled from the codebase, so admins can create/update forms without redeployment.
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt 
+Configure Environment Variables
 
-Scalable: Supports asynchronous operations to handle growth in customer volume.
+Bash
 
-Compliant & Auditable: Ensures adherence to financial regulations while maintaining transparency and security.
+cp .env.example .env
+# Edit .env: Set DB, EMAIL (SMTP), and Secret Key values.
+# Ensure ADMINS_EMAIL_ADDRESS is set for notifications.
+Initialize Database and Run Server
 
-⚙️ Tech Stack
+Bash
 
-Frontend: React (Vite) + TailwindCSS + Radix UI
+python3 manage.py makemigrations
+python3 manage.py migrate
+python3 manage.py createsuperuser
+python3 manage.py runserver 8001
+The API will be available at http://localhost:8001/.
 
-Backend: Django (REST Framework)
+## Documentation
+Access the interactive API documentation (Swagger UI) after the server starts:
 
-Database: PostgreSQL (recommended for production), SQLite (for local development)
+Swagger UI: http://localhost:8001/api/schema/swagger-ui/
 
-Notifications: Webhooks / Email / Slack / MS Teams integrations
+Available Scripts (Django)
+python3 manage.py runserver <port> - Start API server
 
-Deployment: Docker + Nginx + AWS 
+python3 manage.py migrate - Apply database migrations
+
+python3 manage.py shell - Open Django shell
+
+celery -A core worker -l info - Run Celery worker (required for notifications)
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+For support and questions:
+- Create an issue in the repository
+- Contact the development team
+- Check the documentation
+
+---
+
+Built to empower financial services with Creative Dynamic Onboarding. ❤️
