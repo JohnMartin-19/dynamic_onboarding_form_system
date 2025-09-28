@@ -18,11 +18,19 @@ from django.contrib import admin
 from django.urls import path,include
 from forms.models import *
 from authentication.models import *
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 urlpatterns = [
     path('grappelli/', include('grappelli.urls')),
     path('admin/', admin.site.urls),
     path('auth/api/v1/', include('authentication.urls')),
     path('form/api/v1/', include('forms.urls')),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    
+    # 2. Serves the Swagger UI (interactive documentation)
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    
+    # 3. Serves the Redoc UI (alternative documentation view)
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'))
     
 ]

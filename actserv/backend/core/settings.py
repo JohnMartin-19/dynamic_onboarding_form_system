@@ -153,7 +153,8 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication', 
-    )
+    ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema', 
 }
 JAZZMIN_SETTINGS = {
    
@@ -215,7 +216,20 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 # --- ADMINS CONFIGURATION ---
 # Emails listed here receive output from mail_admins()
-ADMINS = config('ADMIN')
+ADMIN_EMAIL = config('ADMINS_EMAIL_ADDRESS', default='summitseekers254@gamil.com')
+ADMINS = [
+    ('Site Admin', ADMIN_EMAIL), 
+]
 
-# The address that receives broken link emails and other miscellaneous error notifications
+# this address that receives broken link emails and other miscellaneous error notifications
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+#swagger settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'ActServ Onboarding Form System API',
+    'DESCRIPTION': 'API endpoints for managing dynamic forms, submissions, and client data.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,  
+    'SCHEMA_PATH_PREFIX': r'/api/v[0-9]/', 
+    'CONTACT': {'name': 'System Admin', 'email': 'summitseekers254@gmail.com'},
+}
