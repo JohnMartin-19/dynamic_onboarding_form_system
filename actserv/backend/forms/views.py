@@ -161,6 +161,11 @@ class SubmissionCreateListAPIView(APIView):
                                 field=form_field_instance,
                                 file=uploaded_file
                             )
+                        notify_admin_of_submission.delay(
+                        submission_id=submission.id,
+                        form_name=submission.form.name, 
+                        client_email=request.user.email
+                    )
                            
                     return Response(
                         {'message': 'Form submitted successfully', 'data': serializer.data}, 
@@ -195,6 +200,9 @@ class SubmissionRetirieveUpdateDestroyAPIView(APIView):
         
 
 class MySubmissions(APIView):
+    """
+    logs all the submissions made by a logged in user
+    """
     permission_classes = [IsAuthenticated]
     serializer_class = SubmissionSerializer
     def get(self,request):
