@@ -200,5 +200,5 @@ class MySubmissions(APIView):
     def get(self,request):
         
         my_submissions = Submission.objects.filter(user =request.user)
-        serializer = self.serializer_class(my_submissions)
+        serializer = self.serializer_class(my_submissions, many = True)
         return Response({'message':'Success','data':serializer.data}, status=status.HTTP_200_OK)

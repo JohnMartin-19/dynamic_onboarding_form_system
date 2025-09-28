@@ -46,7 +46,7 @@ interface ApiSubmissionResponse {
     id: number; 
     form: { id: number, name: string };
     user: { id: number, email: string, first_name: string };
-    data: Record<string, any>;
+    data: string; // Changed to string to reflect the raw API response
     status: 'pending' | 'review' | 'approved' | 'rejected'; 
     submitted_at: string; 
     updated_at: string;
@@ -84,7 +84,7 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
     
     const clientSubmissions = submissions; 
 
-    // --- Utility Function to get Headers (Remains the same) ---
+    // --- Utility Function to get Headers ---
     const getAuthHeaders = useCallback(() => {
         const currentAccessToken = localStorage.getItem('access_token');
         if (!currentAccessToken) {
@@ -96,7 +96,7 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
         };
     }, []);
 
-    // --- Data Fetching Logic (Forms - Remains the same) ---
+    // --- Data Fetching Logic (Forms) ---
     const fetchForms = useCallback(async (headers: Record<string, string>) => {
         const formsResponse = await fetch(FORMS_API_URL, { headers });
         if (!formsResponse.ok) {
@@ -129,7 +129,7 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
         setForms(remappedForms);
     }, []);
     
-    // --- Data Fetching Logic (Submissions - Remains the same) ---
+    // --- Data Fetching Logic (Submissions - REVISED) ---
     const fetchSubmissions = useCallback(async (headers: Record<string, string>) => {
         const submissionsResponse = await fetch(MY_SUBMISSIONS_API_URL, { headers });
         
@@ -143,22 +143,32 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
         const apiData = fullApiResponse.data;
         const submissionArray: ApiSubmissionResponse[] = (apiData && Array.isArray(apiData)) ? apiData : [];
         
-        const remappedSubmissions: FormSubmission[] = submissionArray.map(apiSubmission => ({
-            id: String(apiSubmission.id),
-            formId: String(apiSubmission.form.id),
-            formName: apiSubmission.form.name,
-            clientName: apiSubmission.user.first_name || clientName, 
-            clientEmail: apiSubmission.user.email,
-            data: apiSubmission.data,
-            status: apiSubmission.status,
-            submittedAt: new Date(apiSubmission.submitted_at),
-            files: {} 
-        }));
+        const remappedSubmissions: FormSubmission[] = submissionArray.map(apiSubmission => {
+            // ⭐ CRITICAL FIX: Parse the JSON string inside the 'data' field
+            let parsedData: Record<string, any> = {};
+            try {
+                parsedData = JSON.parse(apiSubmission.data);
+            } catch (e) {
+                console.error("Failed to parse submission data JSON string:", apiSubmission.data, e);
+            }
+
+            return {
+                id: String(apiSubmission.id),
+                formId: String(apiSubmission.form.id),
+                formName: apiSubmission.form.name,
+                clientName: apiSubmission.user.first_name || clientName, 
+                clientEmail: apiSubmission.user.email,
+                data: parsedData, // ⭐ Use the PARSED object here
+                status: apiSubmission.status,
+                submittedAt: new Date(apiSubmission.submitted_at),
+                files: {} 
+            }
+        });
 
         setSubmissions(remappedSubmissions);
     }, [clientName]);
 
-    // --- Combined Fetch Effect (Remains the same) ---
+    // --- Combined Fetch Effect ---
     useEffect(() => {
         const combinedFetch = async () => {
             setLoading(true);
@@ -193,12 +203,13 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
     };
 
     /**
-     * Handles form submission, shows success alert, updates form state, and prevents redirection.
+     * Handles form submission, shows success alert, updates form state, and keeps the user on the current tab.
      */
     const handleSubmitForm = async (formId: string, data: Record<string, any>, files: Record<string, File[]>) => {
         const form = forms.find(f => f.id === formId);
         if (!form) return;
 
+        // Start loading spinner immediately
         setLoading(true);
         try {
             const currentAccessToken = localStorage.getItem('access_token'); 
@@ -210,6 +221,7 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
             formData.append('form_id', formId);
             formData.append('data', JSON.stringify(data)); 
             
+            // Handle file appending
             for (const fieldName in files) {
                 if (files.hasOwnProperty(fieldName)) {
                     files[fieldName].forEach((file: File) => {
@@ -236,31 +248,32 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
             // 1. Show the MUI Alert
             setShowSuccessAlert(true);
             
-            // 2. Clear the form view
+            // 2. Clear the form component view
             setSelectedForm(null);
             
-            // 3. Update submissions to trigger button deactivation in 'Available Forms' tab
+            // 3. CRITICAL: Await the submission fetch to ensure state update before re-render
             const headers = getAuthHeaders();
             if (headers) {
                 await fetchSubmissions(headers); 
             }
             
-            // 4. Hide alert after 5 seconds (No redirection)
+            // 4. Hide alert after 5 seconds
             setTimeout(() => {
                 setShowSuccessAlert(false); 
             }, 5000);
             
+            // 5. Stop loading *only* after submissions state is updated, guaranteeing re-render with disabled button
             setLoading(false); 
             
         } catch (err) {
             console.error('Submission Error:', err);
+            // Stop loading on error and display standard alert
             setLoading(false); 
-            // Display error if API call fails
             alert(`Failed to submit form: ${err instanceof Error ? err.message : 'Unknown error'}`);
         }
     };
     
-    // --- Utility functions for status icon/color (Remains the same) ---
+    // --- Utility functions for status icon/color ---
     const getStatusIcon = (status: string) => { 
         switch (status) {
             case 'pending': return <Clock className="w-5 h-5 text-warning" />;
@@ -295,7 +308,7 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
     // --- MAIN CLIENT PORTAL RENDER ---
     return (
         <div className="min-h-screen bg-neutral-gray">
-            {/* Header (Remains the same) */}
+            {/* Header */}
             <header className="bg-white border-b border-gray shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16">
@@ -361,7 +374,7 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {forms.map((form) => {
-                                        // ✅ This check now runs based on the updated 'submissions' state
+                                        // This check uses the updated 'clientSubmissions' state
                                         const alreadySubmitted = clientSubmissions.some(s => s.formId === form.id);
                                         
                                         return (
@@ -387,7 +400,7 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
 
                                                 <Button 
                                                     onClick={() => handleStartForm(form)}
-                                                    // ✅ Button is DISABLED if form is already submitted
+                                                    // Button is DISABLED if form is already submitted
                                                     disabled={alreadySubmitted} 
                                                     className={alreadySubmitted ? 'btn-secondary' : 'btn-primary'}
                                                     size="sm"
@@ -450,6 +463,7 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
                                     {/* Submission Details */}
                                     <div className="mt-4 pt-4 border-t border-gray">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {/* Iterate over the now-parsed 'submission.data' object */}
                                             {Object.entries(submission.data).map(([key, value]) => (
                                                 <div key={key} className="text-sm">
                                                     <span className="text-text-gray">{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</span>
