@@ -3,13 +3,13 @@ from django.db import IntegrityError
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from .models import Form, Field, Submission, Document 
-import datetime # Needed for document path test
+import datetime 
 from unittest import mock
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
-# Import your Celery task to patch it
+
 from .tasks import notify_admin_of_submission 
 
 CustomUser = get_user_model()
@@ -150,7 +150,7 @@ class SubmissionModelTest(TestCase):
         s3 = Submission.objects.create(
             form=self.form, 
             user=self.user,
-            submitted_at='2025-01-01T12:00:00Z' # Newest
+            submitted_at='2025-01-01T12:00:00Z' 
         )
         
        
@@ -240,13 +240,12 @@ class DocumentModelTest(TestCase):
         
         
 #--------------------------------------------------------------------------------------------------------------------------------
-# forms/tests.py (Continued, place this after the Model Test Cases)
-
+# API TESTS
 
 class BaseAPITestSetup(APITestCase):
     """Setup base users and initial objects for API testing."""
     def setUp(self):
-        # Create users
+       
         self.admin_user = CustomUser.objects.create_user(
             username='admin_test',
             email='admin@test.com',
@@ -261,7 +260,6 @@ class BaseAPITestSetup(APITestCase):
             is_staff=False
         )
 
-        # Create base objects
         self.form = Form.objects.create(
             name='Test Form',
             created_by=self.admin_user
@@ -280,8 +278,7 @@ class BaseAPITestSetup(APITestCase):
             'form_id': self.form.id,
             'data': {'name_field': 'John Doe'}
         }
-        
-        # URLs
+
         self.form_list_url = reverse('form-list-create')
         self.field_list_url = reverse('field-list-create')
         self.submission_list_url = reverse('submission-list-create')
@@ -301,8 +298,6 @@ class FormAPITest(BaseAPITestSetup):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['data']), 1)
 
-    # --- POST (Create) Tests ---
-    
     def test_create_form_as_admin(self):
         """Admin user can create a form."""
         self.authenticate_user(self.admin_user)
@@ -316,12 +311,10 @@ class FormAPITest(BaseAPITestSetup):
         self.authenticate_user(self.regular_user)
         new_form_data = {'name': 'Denied Form'}
         response = self.client.post(self.form_list_url, new_form_data, format='json')
-        # DRF's @permission_classes decorator on a method defaults to 403 when authenticated but unauthorized
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN) 
         self.assertEqual(Form.objects.count(), 1)
 
-    # --- PUT (Update) Tests ---
-    
+  
     def test_update_form_as_admin(self):
         """Admin can update an existing form."""
         self.authenticate_user(self.admin_user)
@@ -332,9 +325,7 @@ class FormAPITest(BaseAPITestSetup):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.form.description, 'Updated Description')
         self.assertEqual(self.form.version, 2)
-        
-    # --- DELETE Tests ---
-    
+
     def test_delete_form_as_admin(self):
         """Admin can delete a form."""
         self.authenticate_user(self.admin_user)
@@ -348,7 +339,6 @@ class FormAPITest(BaseAPITestSetup):
         self.authenticate_user(self.regular_user)
         url = reverse('form-retrieve-update-destroy', kwargs={'pk': self.form.id})
         response = self.client.delete(url)
-        # Assuming the view is protected by IsAdminUser in URL routing or default permissions
         self.assertIn(response.status_code, [status.HTTP_403_FORBIDDEN, status.HTTP_405_METHOD_NOT_ALLOWED])
         self.assertEqual(Form.objects.count(), 1)
 
@@ -383,7 +373,6 @@ class FieldAPITest(BaseAPITestSetup):
             'type': 'number'
         }
         response = self.client.post(self.field_list_url, new_field_data, format='json')
-        # This view has @permission_classes([IsAdminUser]), so unauthorized/unauthenticated gets 401
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertEqual(Field.objects.count(), 2)
 
@@ -396,14 +385,11 @@ class SubmissionAPITest(BaseAPITestSetup):
         self.authenticate_user(self.regular_user)
         self.form_id = self.form.id
 
-    # --- GET (List) Tests ---
-    
     def test_list_all_submissions_authenticated(self):
         """Authenticated users can see all submissions (Assumed Admin logic or project requirement)."""
         Submission.objects.create(form=self.form, user=self.regular_user, data={'name_field': 'User1'})
         Submission.objects.create(form=self.form, user=self.admin_user, data={'name_field': 'Admin1'})
         
-        # Test as regular user first (should see both if IsAuthenticated is the only requirement)
         response = self.client.get(self.submission_list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['data']), 2) 
@@ -416,18 +402,14 @@ class SubmissionAPITest(BaseAPITestSetup):
         
     def test_list_my_submissions(self):
         """Authenticated users can list only their own submissions."""
-        # Create submission by current user
         Submission.objects.create(form=self.form, user=self.regular_user, data={'name_field': 'My Data'})
-        # Create submission by another user
         Submission.objects.create(form=self.form, user=self.admin_user, data={'name_field': 'Other Data'})
         
         response = self.client.get(self.my_submissions_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Should only see the one submission made by self.regular_user
         self.assertEqual(len(response.data['data']), 1)
         self.assertEqual(response.data['data'][0]['user']['id'], self.regular_user.id)
-    # --- POST (Create) Tests ---
-    
+   
     @mock.patch('forms.views.notify_admin_of_submission')
     def test_create_submission_with_data(self, mock_celery_task):
         """Authenticated user can submit a form with only data."""
@@ -435,7 +417,7 @@ class SubmissionAPITest(BaseAPITestSetup):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Submission.objects.count(), 1)
         self.assertEqual(Submission.objects.first().user, self.regular_user)
-        # Verify Celery task was called
+      
         mock_celery_task.delay.assert_called_once()
         
     @mock.patch('forms.views.notify_admin_of_submission')
@@ -450,8 +432,8 @@ class SubmissionAPITest(BaseAPITestSetup):
         
         payload = {
             'form_id': self.form_id,
-            'data': '{"name_field": "File User"}', # JSON data must be passed as a string/field when using multipart/form-data
-            'Image': mock_file # Field name must match field_file.name
+            'data': '{"name_field": "File User"}', 
+            'Image': mock_file 
         }
         
         response = self.client.post(self.submission_list_url, payload, format='multipart')
@@ -460,7 +442,7 @@ class SubmissionAPITest(BaseAPITestSetup):
         self.assertEqual(Submission.objects.count(), 1)
         self.assertEqual(Document.objects.count(), 1)
         self.assertIn('uploads', Document.objects.first().file.name)
-        # Verify Celery task was called
+       
         mock_celery_task.delay.assert_called_once()
 
     def test_create_submission_unauthenticated_denied(self):
@@ -473,7 +455,7 @@ class SubmissionAPITest(BaseAPITestSetup):
     def test_create_submission_invalid_data(self):
         """Submission with invalid data (e.g., missing form_id) is denied."""
         invalid_data = self.submission_data.copy()
-        invalid_data['form_id'] = 9999 # Non-existent form ID
+        invalid_data['form_id'] = 9999 
         response = self.client.post(self.submission_list_url, invalid_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('form_id', response.data['data'])
