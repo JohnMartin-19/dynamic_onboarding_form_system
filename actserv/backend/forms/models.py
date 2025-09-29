@@ -26,6 +26,13 @@ class Field(models.Model):
         ('file', 'File Upload'),
     )
 
+    CONDITIONAL_OPERATORS = (
+        ('equal_to', 'Equal To'),
+        ('greater_than', 'Greater Than'),
+        ('less_than', 'Less Than'),
+        ('not_equal_to', 'Not Equal To'),
+    )
+
     form = models.ForeignKey(Form, on_delete=models.CASCADE, related_name='fields')
     name = models.CharField(max_length=255) 
     type = models.CharField(max_length=20, choices=FIELD_TYPES)
@@ -37,14 +44,38 @@ class Field(models.Model):
     is_required = models.BooleanField(default=False)
     order = models.IntegerField(default=0)  
     created_at = models.DateTimeField(auto_now_add=True)
-
+    is_conditional = models.BooleanField(default=False, help_text="Set to True if this field's visibility depends on another field.")
+    conditional_field = models.ForeignKey(
+        'self', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='dependent_fields',
+        help_text="The field (on the same form) that controls this field's visibility."
+    )
+    conditional_operator = models.CharField(
+        max_length=20, 
+        choices=CONDITIONAL_OPERATORS, 
+        blank=True, 
+        null=True
+    )
+    conditional_value = models.CharField(
+        max_length=255, 
+        blank=True, 
+        null=True,
+        help_text="The threshold value (e.g., '50000' or 'true')."
+    )
+   
     class Meta:
         unique_together = ("form","name")
         ordering = ['form','name']
+        
     def __str__(self):
         return self.name
-        
-#holds client data/
+    
+    
+    
+#holds/stores client data/submitted forms
 class Submission(models.Model):
     STATUS_CHOICES = (
         ('pending', 'Pending'),
