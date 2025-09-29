@@ -13,6 +13,7 @@ def notify_admin_of_submission(submission_id: int, form_name: str, client_email:
 
     subject = f" NEW FORM SUBMISSION: {form_name}"
     message = (
+        f"Dear Sys Admin;\n\n"
         f"A new form submission has been received from {client_email}.\n\n"
         f"Form Name: {form_name}\n"
         f"Submission ID: {submission_id}\n\n"
