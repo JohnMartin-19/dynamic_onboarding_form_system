@@ -20,13 +20,6 @@ class UserRegistrationCreateListAPIView(APIView):
         data = request.data
         password = data.get('password')
         confirm_password = data.get('confirm_password')
-        # company_name = request.data.get("company_name")
-        # email = request.data.get("email")
-        # phone_number = request.data.get("phone_number")
-        # username = request.data.get("username")
-        # first_name = request.data.get('first_name')
-        # last_name = request.data.get('last_name')
-        
         serializer = self.serializer_class(data = data)
         if password != confirm_password:
             data.pop('confirm_password')
