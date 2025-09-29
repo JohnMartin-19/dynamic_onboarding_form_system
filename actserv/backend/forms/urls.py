@@ -2,11 +2,11 @@ from django.urls import path
 from .views import *
 
 urlpatterns = [
-    path('forms/', FormCreateListAPIView.as_view(), name= 'Create and List Forms'),
-    path('forms/<int:pk>/', FormRetrieveUpdateDestroyAPIView.as_view(), name = 'Edit/Delete/Update Form'),
-    path('fields/', FieldCreateListAPIView.as_view(), name = 'Create and List Fields'),
-    path('fields/<int:pk>/', FieldRetrieveUpdateDestroyAPIView.as_view(), name = 'Edit/Update/Delete Fields'),
-    path('submissions/', SubmissionCreateListAPIView.as_view(), name = 'Create and List Submissions'),
-    path('submissions/<int:pk>/', SubmissionRetirieveUpdateDestroyAPIView.as_view(), name = 'Edit/Delete Submissions'),
-    path('my_submissions/', MySubmissions.as_view(), name = 'View your submissions'),
+    path('forms/', FormCreateListAPIView.as_view(), name='form-list-create'),
+    path('forms/<int:pk>/', FormRetrieveUpdateDestroyAPIView.as_view(), name='form-retrieve-update-destroy'),
+    path('fields/', FieldCreateListAPIView.as_view(), name='field-list-create'),
+    path('fields/<int:pk>/', FieldRetrieveUpdateDestroyAPIView.as_view(), name='field-retrieve-update-destroy'), 
+    path('submissions/', SubmissionCreateListAPIView.as_view(), name='submission-list-create'),
+    path('submissions/<int:pk>/', SubmissionRetrieveUpdateDestroyAPIView.as_view(), name='submission-retrieve-update-destroy'),   
+    path('my_submissions/', MySubmissions.as_view(), name='my-submissions'),
 ]

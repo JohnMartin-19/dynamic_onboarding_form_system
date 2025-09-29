@@ -1,6 +1,6 @@
 from django.shortcuts import render
-from rest_framework.decorators import  permission_classes
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+# Removed: from rest_framework.decorators import permission_classes (used for FBVs, not CBVs like APIView)
+from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
@@ -18,38 +18,48 @@ class FormCreateListAPIView(APIView):
     FETCHING ALL FORMS 
     """
     serializer_class = FormSerializer
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAdminUser()]
     
     def get(self, request):
+
         forms = Form.objects.all()
         serializer = self.serializer_class(forms, many = True)
         return Response({'message':'Success','data':serializer.data},status=status.HTTP_200_OK)
     
     """
-    _Creating a FORM_
-
-    Args:
-        APIView (_POST_): _Lets the admin create a form _
-        
+        APIView (_POST_): _Lets the admin create a form _  
     """
-    @permission_classes([IsAdminUser])
+    
     def post(self,request):
+
         data = request.data
         serializer = self.serializer_class(data = data)
         if serializer.is_valid():
             with transaction.atomic():
-                serializer.save()
+                serializer.save(created_by=request.user) 
                 return Response({'message':'Form created successfully','data':serializer.data},status = status.HTTP_201_CREATED)
-            return Response({'message':'Failed to create form', 'data':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+       
+        return Response({'message':'Failed to create form', 'data':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
 class FormRetrieveUpdateDestroyAPIView(APIView):
     """
     helper method for getting a particular form by id
     """
     serializer_class = FormSerializer
-    def get_object(self, request,pk):
-        return get_object_or_404(pk=pk)
     
-    def get(self, request,pk):
+    def get_permissions(self):
+        if self.request.method in ['PUT', 'DELETE']:
+            return [IsAdminUser()]
+        return [AllowAny()] # Allow GET requests (retrieve) for anyone
+    
+    def get_object(self, pk):
+        return get_object_or_404(Form, pk=pk)
+
+    def get(self, request, pk):
         form = self.get_object(pk)
         serializer = self.serializer_class(form)
         return Response({'message':'Success', 'data':serializer.data}, status=status.HTTP_200_OK)
@@ -61,40 +71,56 @@ class FormRetrieveUpdateDestroyAPIView(APIView):
             with transaction.atomic():
                 serializer.save()
                 return Response({'message':'Form updated successfully','data':serializer.data}, status=status.HTTP_200_OK)
-            return Response({'mesage':'Failed to update form', 'data':serializer.errors},status=status.HTTP_400_BAD_REQUEST)
+      
+        return Response({'message':'Failed to update form', 'data':serializer.errors},status=status.HTTP_400_BAD_REQUEST)
         
-    def delete(self, pk):
+    def delete(self, request, pk): 
+       
         form = self.get_object(pk)
         form.delete()
         return Response({'message':'Form delete successfully'},status=status.HTTP_204_NO_CONTENT)
-    
+
+
 class FieldCreateListAPIView(APIView):
     """
     API view to create and list all form fields
     """
     serializer_class = FieldSerializer
     
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAdminUser()]
+    
     def get(self, request):
         fields = Field.objects.all()
         serializer = self.serializer_class(fields, many=True)
         return Response({'message':'Success','data':serializer.data}, status=status.HTTP_200_OK)
     
-    @permission_classes([IsAdminUser])
+   
     def post(self, request):
         data = request.data
         serializer = self.serializer_class(data = data)
         if serializer.is_valid():
             with transaction.atomic():
-                serializer.save()
+                form_instance = get_object_or_404(Form, pk=data.get('form'))
+
+                serializer.save(form = form_instance) 
                 return Response({'message':'Field created successfully', 'data':serializer.data}, status=status.HTTP_201_CREATED)
-            return Response({'message':'Failed to create field', 'data':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({'message':'Failed to create field', 'data':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
 class FieldRetrieveUpdateDestroyAPIView(APIView):
     
     serializer_class = FieldSerializer
     
-    def get_object(self, request, pk):
-        return get_object_or_404(pk=pk)
+    def get_object(self, pk):
+        return get_object_or_404(Field,pk=pk)
+ 
+    def get_permissions(self):
+        if self.request.method in ['PUT', 'DELETE']:
+            return [IsAdminUser()]
+        return [AllowAny()] 
     
     def get(self, request,pk):
         field = self.get_object(pk)
@@ -109,11 +135,12 @@ class FieldRetrieveUpdateDestroyAPIView(APIView):
             return Response({'message':'Field updated successfully', 'data':serializer.data}, status = status.HTTP_200_OK)
         return Response({'message':'Failed to update the field', 'data':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
-    def delete(self, pk):
+    def delete(self,request, pk):
         field = self.get_object(pk)
         field.delete()
         return Response({'message':'Field deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
-    
+
+
 class SubmissionCreateListAPIView(APIView):
     
     serializer_class = SubmissionSerializer
@@ -127,20 +154,14 @@ class SubmissionCreateListAPIView(APIView):
     def post(self, request):
        
         data = request.data
-        print('DATAAAA:', data)
         serializer_input_data = {
             'form_id': data.get('form_id'),
             'data': data.get('data') 
         }
-
         serializer = self.serializer_class(data=serializer_input_data, context={'request': request})
         file_fields_to_process = {}
-        
-       
-        if 'Image' in data:
-            
-            file_fields_to_process['Image'] = data.getlist('Image') 
-
+        if 'Image' in data:  
+            file_fields_to_process['Image'] = data.getlist('Image')
         if serializer.is_valid():
             try:
                 with transaction.atomic():
@@ -171,29 +192,38 @@ class SubmissionCreateListAPIView(APIView):
                         {'message': 'Form submitted successfully', 'data': serializer.data}, 
                         status=status.HTTP_201_CREATED
                     )
+            
             except Exception as e:
+                
                 return Response(
-                    {'message': 'An internal error occurred during submission', 'error': str(e)}, 
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    {'message': 'Failed to submit form due to internal validation error.', 
+                     'data': {'form_id': [f"Object does not exist or invalid data: {str(e)}"]}}, # <-- ADDED 'data' KEY for error details
+                    status=status.HTTP_400_BAD_REQUEST 
                 )
         return Response(
             {'message': 'Failed to submit form', 'data': serializer.errors}, 
             status=status.HTTP_400_BAD_REQUEST
         )
     
-class SubmissionRetirieveUpdateDestroyAPIView(APIView):
+class SubmissionRetrieveUpdateDestroyAPIView(APIView):
     
     serializer_class = SubmissionSerializer
     
-    def get_object(self, request, pk):
-        return get_object_or_404(pk=pk)
+    
+    def get_permissions(self):
+        if self.request.method == 'DELETE':
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
+    
+    def get_object(self, pk):
+        return get_object_or_404(Submission,pk=pk)
     
     def get(self, request, pk):
         submission = self.get_object(pk)
         serializer = self.serializer_class(submission)
         return Response({'message':'Success', 'data':serializer.data}, status = status.HTTP_200_OK)
     
-    def delete(self,pk):
+    def delete(self,request,pk):
         submission = self.get_object(pk)
         submission.delete()
         return Response({'message':'Submission deleted successfully'}, status = status.HTTP_204_NO_CONTENT)
