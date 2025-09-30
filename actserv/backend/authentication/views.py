@@ -36,3 +36,19 @@ class UserRegistrationCreateListAPIView(APIView):
         users = CustomUser.objects.all()
         serializer = self.serializer_class(users, many = True)
         return Response({'message':'Success', 'data':serializer.data}, status = status.HTTP_200_OK)
+    
+    
+class LoginAPIView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.user
+        response.data['user_data'] = {
+            'username': user.username,
+            'phone_number': getattr(user, 'phone_number', None),
+        }
+
+        return response

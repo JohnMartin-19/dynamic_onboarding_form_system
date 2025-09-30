@@ -16,9 +16,48 @@ import {
   Plus,
   Loader2 
 } from 'lucide-react';
-import { type Form, type FormSubmission, type FormField } from '../../types/forms'; 
 
-// --- 1. API Interfaces (Assuming they remain the same) ---
+export interface FormField {
+    id: string;
+    label: string;
+    name: string;
+    type: string;
+    options: Record<string, any>;
+    isRequired: boolean;
+    order: number;
+   
+    isConditional: boolean;
+    conditionalField: { id: number; name: string } | null; // ID and Name of the controlling field
+    conditionalOperator: 'equal_to' | 'greater_than' | 'less_than' | 'not_equal_to' | null;
+    conditionalValue: string | null;
+   
+}
+
+export interface Form {
+    id: string;
+    name: string;
+    description: string;
+    version: number;
+    category: string;
+    status: 'active' | 'inactive';
+    fields: FormField[];
+    createdAt: string; 
+    updatedAt: string; 
+    submissionCount: number; 
+}
+
+export interface FormSubmission {
+    id: string;
+    formId: string;
+    formName: string;
+    clientName: string;
+    clientEmail: string;
+    data: Record<string, any>;
+    status: 'pending' | 'review' | 'approved' | 'rejected';
+    submittedAt: Date;
+    files: Record<string, any>;
+}
+
 interface ApiFormResponse {
   id: number;
   name: string;
@@ -29,6 +68,7 @@ interface ApiFormResponse {
   created_at: string;
   updated_at: string;
   form_fields: ApiFormFieldResponse[];
+  submissionCount: number; 
 }
 
 interface ApiFormFieldResponse {
@@ -40,13 +80,19 @@ interface ApiFormFieldResponse {
   is_required: boolean; 
   order: number;
   created_at: string;
+  is_conditional: boolean;
+  conditional_field: { id: number; name: string } | null; // From MinimalFieldSerializer
+  conditional_operator: string | null;
+  conditional_value: string | null;
+ 
 }
+
 
 interface ApiSubmissionResponse { 
     id: number; 
     form: { id: number, name: string };
     user: { id: number, email: string, first_name: string };
-    data: string; // Changed to string to reflect the raw API response
+    data: string;
     status: 'pending' | 'review' | 'approved' | 'rejected'; 
     submitted_at: string; 
     updated_at: string;
@@ -65,26 +111,52 @@ interface ClientPortalProps {
     accessToken: string; 
 }
 
-// --- 2. API Endpoints (Assuming they remain the same) ---
+
 const FORMS_API_URL = 'http://127.0.0.1:8001/form/api/v1/forms/';
 const SUBMISSIONS_API_URL = 'http://127.0.0.1:8001/form/api/v1/submissions/'; 
 const MY_SUBMISSIONS_API_URL = 'http://127.0.0.1:8001/form/api/v1/my_submissions/';
 
-// --- 3. Component Start ---
-export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }: ClientPortalProps) {
+
+export function ClientPortal({ onLogout, clientName,  accessToken }: ClientPortalProps) {
     const [activeTab, setActiveTab] = useState('available');
     const [forms, setForms] = useState<Form[]>([]); 
     const [submissions, setSubmissions] = useState<FormSubmission[]>([]); 
     const [selectedForm, setSelectedForm] = useState<Form | null>(null);
     const [loading, setLoading] = useState(true); 
     const [error, setError] = useState<string | null>(null); 
+    const [clientUsername, setClientUsername] = useState('Client User'); 
+
     
-    // State for Alert visibility
     const [showSuccessAlert, setShowSuccessAlert] = useState(false); 
+
+    const [loggingOut, setLoggingOut] = useState(false);
     
     const clientSubmissions = submissions; 
+    useEffect(() => {
+      const token = localStorage.getItem('access_token');
+      
+      if (token) {
+        try {
+         //decoding the JWT to extract the payload(at index 1)
+          const payloadBase64 = token.split(".")[1]; 
+          const decodedPayload = JSON.parse(atob(payloadBase64));
 
-    // --- Utility Function to get Headers ---
+          if (decodedPayload.username) {
+            
+            setClientUsername(decodedPayload.username); 
+          } else if (decodedPayload.first_name) {
+            setClientUsername(decodedPayload.first_name); 
+          }
+  
+          if (decodedPayload.tenant_id) {
+            localStorage.setItem('tenant_id', decodedPayload.tenant_id)  
+          }
+        } catch (e) {
+          console.error("Failed to decode JWT token", e);
+        }
+      }
+  }, []);
+
     const getAuthHeaders = useCallback(() => {
         const currentAccessToken = localStorage.getItem('access_token');
         if (!currentAccessToken) {
@@ -96,7 +168,6 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
         };
     }, []);
 
-    // --- Data Fetching Logic (Forms) ---
     const fetchForms = useCallback(async (headers: Record<string, string>) => {
         const formsResponse = await fetch(FORMS_API_URL, { headers });
         if (!formsResponse.ok) {
@@ -113,6 +184,9 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
                 version: apiForm.version,
                 category: apiForm.name, 
                 status: apiForm.is_active ? 'active' : 'inactive',
+                createdAt:apiForm.created_at, 
+                updatedAt: apiForm.updated_at, 
+                submissionCount: apiForm.submissionCount, 
                 fields: apiForm.form_fields.map(apiField => {
                     const fieldName = apiField.name;
                     return ({
@@ -123,13 +197,16 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
                         options: apiField.options,
                         isRequired: apiField.is_required,
                         order: apiField.order,
+                        isConditional: apiField.is_conditional,
+                        conditionalField: apiField.conditional_field,
+                        conditionalOperator: apiField.conditional_operator as FormField['conditionalOperator'],
+                        conditionalValue: apiField.conditional_value,
                     }) as unknown as FormField; 
                 }),
             }));
         setForms(remappedForms);
     }, []);
-    
-    // --- Data Fetching Logic (Submissions - REVISED) ---
+
     const fetchSubmissions = useCallback(async (headers: Record<string, string>) => {
         const submissionsResponse = await fetch(MY_SUBMISSIONS_API_URL, { headers });
         
@@ -144,7 +221,6 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
         const submissionArray: ApiSubmissionResponse[] = (apiData && Array.isArray(apiData)) ? apiData : [];
         
         const remappedSubmissions: FormSubmission[] = submissionArray.map(apiSubmission => {
-            // ⭐ CRITICAL FIX: Parse the JSON string inside the 'data' field
             let parsedData: Record<string, any> = {};
             try {
                 parsedData = JSON.parse(apiSubmission.data);
@@ -158,7 +234,7 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
                 formName: apiSubmission.form.name,
                 clientName: apiSubmission.user.first_name || clientName, 
                 clientEmail: apiSubmission.user.email,
-                data: parsedData, // ⭐ Use the PARSED object here
+                data: parsedData, 
                 status: apiSubmission.status,
                 submittedAt: new Date(apiSubmission.submitted_at),
                 files: {} 
@@ -168,7 +244,7 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
         setSubmissions(remappedSubmissions);
     }, [clientName]);
 
-    // --- Combined Fetch Effect ---
+  
     useEffect(() => {
         const combinedFetch = async () => {
             setLoading(true);
@@ -195,21 +271,16 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
 
         combinedFetch();
     }, [getAuthHeaders, fetchForms, fetchSubmissions, accessToken]); 
-    // --- End Data Fetching Logic ---
-
+ 
 
     const handleStartForm = (form: Form) => {
         setSelectedForm(form);
     };
 
-    /**
-     * Handles form submission, shows success alert, updates form state, and keeps the user on the current tab.
-     */
     const handleSubmitForm = async (formId: string, data: Record<string, any>, files: Record<string, File[]>) => {
         const form = forms.find(f => f.id === formId);
         if (!form) return;
 
-        // Start loading spinner immediately
         setLoading(true);
         try {
             const currentAccessToken = localStorage.getItem('access_token'); 
@@ -220,8 +291,7 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
             const formData = new FormData();
             formData.append('form_id', formId);
             formData.append('data', JSON.stringify(data)); 
-            
-            // Handle file appending
+
             for (const fieldName in files) {
                 if (files.hasOwnProperty(fieldName)) {
                     files[fieldName].forEach((file: File) => {
@@ -243,37 +313,37 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
                 throw new Error(`Submission failed: ${submissionResponse.status} - ${errorText}`);
             }
 
-            // --- SUCCESS LOGIC: Alert & Inactivate Form ---
-            
-            // 1. Show the MUI Alert
             setShowSuccessAlert(true);
-            
-            // 2. Clear the form component view
             setSelectedForm(null);
             
-            // 3. CRITICAL: Await the submission fetch to ensure state update before re-render
+            // await the submission fetch to ensure state update before re-render
             const headers = getAuthHeaders();
             if (headers) {
                 await fetchSubmissions(headers); 
             }
-            
-            // 4. Hide alert after 5 seconds
             setTimeout(() => {
                 setShowSuccessAlert(false); 
             }, 5000);
-            
-            // 5. Stop loading *only* after submissions state is updated, guaranteeing re-render with disabled button
+
             setLoading(false); 
             
         } catch (err) {
             console.error('Submission Error:', err);
-            // Stop loading on error and display standard alert
             setLoading(false); 
             alert(`Failed to submit form: ${err instanceof Error ? err.message : 'Unknown error'}`);
         }
     };
-    
-    // --- Utility functions for status icon/color ---
+
+    const handleLogout = () => {
+        setLoggingOut(true);
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token'); 
+        setTimeout(() => {
+            setLoggingOut(false);
+            onLogout();
+        }, 5000);
+    };
+
     const getStatusIcon = (status: string) => { 
         switch (status) {
             case 'pending': return <Clock className="w-5 h-5 text-warning" />;
@@ -294,7 +364,6 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
     };
 
 
-    // RENDER THE FORM SUBMISSION COMPONENT
     if (selectedForm) {
         return (
             <FormSubmissionComponent
@@ -305,8 +374,18 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
         );
     }
 
-    // --- MAIN CLIENT PORTAL RENDER ---
+    if (loggingOut) {
+        return (
+            <div className="fixed inset-0 bg-white/90 z-[100] flex flex-col items-center justify-center">
+                <Loader2 className="w-12 h-12 text-primary-green animate-spin mb-4" />
+                <h2 className="text-xl font-semibold text-text-dark">Logging you out...</h2>
+                <p className="text-text-gray">Please wait while your session is securely terminated.</p>
+            </div>
+        );
+    }
+
     return (
+      
         <div className="min-h-screen bg-neutral-gray">
             {/* Header */}
             <header className="bg-white border-b border-gray shadow-sm">
@@ -316,11 +395,11 @@ export function ClientPortal({ onLogout, clientName, clientEmail, accessToken }:
                             <FileText className="w-8 h-8 text-primary-green" />
                             <div>
                                 <h1 className="text-xl font-semibold">Client Portal</h1>
-                                <p className='text-sm text-text-gray'>Welcome back, {clientName}</p>
+                                <p className='text-sm text-text-gray'>Welcome back, {clientUsername} </p>
                             </div>
                         </div>
                         
-                        <Button variant="ghost" size="sm" onClick={onLogout}>
+                        <Button variant="ghost" size="sm" onClick={handleLogout}> {/* Use new handler */}
                             <LogOut className="w-5 h-5 mr-2" />
                             Logout
                         </Button>

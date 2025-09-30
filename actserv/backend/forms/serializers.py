@@ -4,7 +4,7 @@ from authentication.models import CustomUser
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
-     
+    
     class Meta:
         model = CustomUser
         fields = ['id', 'email', 'first_name', 'last_name', 'phone_number', 'company_name', 'role', 'is_active', 'is_staff', 'date_joined']
@@ -15,6 +15,35 @@ class MinimalFormSerializer(serializers.ModelSerializer):
     class Meta:
         model = Form
         fields = ['id', 'name', 'version']    
+
+
+class MinimalFieldSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Field
+        fields = ['id', 'name']
+        
+class FieldSerializer(serializers.ModelSerializer):
+    form = serializers.SerializerMethodField(read_only=True) 
+    conditional_field = MinimalFieldSerializer(read_only=True) 
+    
+    class Meta:
+        model = Field
+        fields = [
+            'id','form','name','type',
+            'options','is_required','order','created_at',
+            'is_conditional', 
+            'conditional_field', 
+            'conditional_operator', 
+            'conditional_value',
+        ]
+        read_only_fields = ['created_at']
+    
+    def get_form(self, obj):
+        """
+        Returns a partial representation of the Form using the MinimalFormSerializer.
+        """
+        form_instance = obj.form
+        return MinimalFormSerializer(form_instance, context=self.context).data
 
 class FormSerializer(serializers.ModelSerializer):
     created_by = CustomUserSerializer(read_only=True) 
@@ -28,25 +57,6 @@ class FormSerializer(serializers.ModelSerializer):
     def get_form_fields(self, obj):
         fields = obj.fields.all()
         return FieldSerializer(fields, many=True, context=self.context).data
-class FieldSerializer(serializers.ModelSerializer):
-    form = serializers.SerializerMethodField(read_only=True) 
-    
-    class Meta:
-        model = Field
-        fields = ['id','form','name','type',
-                  'options','is_required','order','created_at']
-        read_only_fields = ['created_at']
-    
-    def get_form(self, obj):
-        """
-        Returns a partial representation of the Form using the MinimalFormSerializer.
-        """
-        form_instance = obj.form
-        
-        # Instantiate the minimal serializer and return its data
-        return MinimalFormSerializer(form_instance, context=self.context).data
-
-        
 
 class DocumentSerializer(serializers.ModelSerializer):
    
