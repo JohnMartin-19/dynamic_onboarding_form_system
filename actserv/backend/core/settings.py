@@ -214,8 +214,8 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
-# --- ADMINS CONFIGURATION ---
-# Emails listed here receive output from mail_admins()
+# 
+# emails listed here receive output from mail_admins()
 ADMIN_EMAIL = config('ADMINS_EMAIL_ADDRESS', default='summitseekers254@gamil.com')
 ADMINS = [
     ('Site Admin', ADMIN_EMAIL), 

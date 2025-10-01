@@ -1,0 +1,7 @@
+# .dockerignore for React Frontend
+
+# Ignore local dependencies and build artifacts
+node_modules
+build
+dist
+.env
