@@ -1,0 +1,21 @@
+# .dockerignore for Django Backend
+
+# Python virtual environments and caches
+venv/
+__pycache__/
+*.pyc
+*.sqlite3
+
+# Development-specific files
+db.sqlite3
+.vscode/
+.env
+
+# MacOS files
+.DS_Store
+
+# Logs
+*.log
+
+# Node.js artifacts (since you had package.json here, if you use npm for anything)
+node_modules/
