@@ -21,11 +21,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-6!9y)4-66eb3-d(#swi^@n)6#$@ga*-viqhvuyn!huego+l%n&'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'your-insecure-fallback-key')
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 CORS_ALLOWED_ORIGINS = [
@@ -89,16 +87,35 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
+DB_HOST = os.environ.get('POSTGRES_DB_HOST', 'localhost')
+DB_NAME = os.environ.get('POSTGRES_DB_NAME', 'actserv') # Use a fallback for local testing without Docker
+DB_USER = os.environ.get('POSTGRES_DB_USER', 'mburu')
+DB_PASS = os.environ.get('POSTGRES_DB_PASSWORD', 'dev_password')
+DB_PORT = os.environ.get('POSTGRES_DB_PORT', '5432')
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': DB_NAME,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASS,
+        'HOST': DB_HOST,
+        'PORT': DB_PORT,
     }
 }
+
+# Add this setting for Docker to allow connections from the frontend service
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend'] 
+# 'backend' is the service name used in docker-compose, allowing internal container communication
+
+# Static and Media files for Docker volumes
+# These paths must match the paths created in the Backend Dockerfile
+MEDIA_ROOT = '/vol/web/media'
+STATIC_ROOT = '/vol/web/static'
+
 
 
 # Password validation
