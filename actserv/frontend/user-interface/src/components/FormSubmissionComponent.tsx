@@ -88,7 +88,7 @@ export function FormSubmissionComponent({ form, onSubmit, onCancel }: FormSubmis
     const newErrors: Record<string, string> = {};
     
     form.fields.forEach(field => {
-      if (field.required) {
+      if (field.isRequired) {
         const value = formData[field.name];
         const fieldFiles = files[field.name];
         
@@ -118,7 +118,7 @@ export function FormSubmissionComponent({ form, onSubmit, onCancel }: FormSubmis
             break;
         }
         
-        if (shouldShow && field.required) {
+        if (shouldShow && field.isRequired) {
           const value = formData[field.name];
           const fieldFiles = files[field.name];
           
@@ -228,7 +228,7 @@ export function FormSubmissionComponent({ form, onSubmit, onCancel }: FormSubmis
                   <div key={field.id} className="space-y-2">
                     <Label className="flex items-center gap-1">
                       {field.label}
-                      {field.required && <span className="text-error">*</span>}
+                      {field.isRequired && <span className="text-error">*</span>}
                     </Label>
                     
                     {field.type === 'text' && (

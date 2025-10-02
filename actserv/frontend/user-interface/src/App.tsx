@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { AdminDashboard } from './components/AdminDashboard';
 import { ClientPortal } from './components/ClientPortal';
 import { LoginPage } from './components/LoginPage';
 import { SignupPage } from './components/SignupPage';
@@ -99,9 +98,7 @@ export default function App() {
     setAuthState('login');
   };
 
-  const handleAdminPortal = () => {
-    setAuthState('adminLogin');
-  };
+ 
 
  
   if (authState === 'roleSelection') {
@@ -165,15 +162,13 @@ export default function App() {
 
     return (
       <div className="min-h-screen bg-neutral-gray">
-        {user.userType === 'admin' ? (
-          <AdminDashboard onLogout={handleLogout} />
-        ) : (
+        (
           <ClientPortal 
               onLogout={handleLogout}
               clientName={displayName}
               clientEmail={user.email} 
               accessToken={''}          />
-        )}
+        )
       </div>
     );
   }

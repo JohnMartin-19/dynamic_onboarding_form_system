@@ -17,12 +17,15 @@ import {
   Loader2 
 } from 'lucide-react';
 
+// Define the narrow union type for form field types
+type FormFieldType = "number" | "text" | "checkbox" | "date" | "file" | "dropdown";
+
 export interface FormField {
     id: string;
     label: string;
     name: string;
-    type: string;
-    options: Record<string, any>;
+    type: FormFieldType; 
+    options: string[];
     isRequired: boolean;
     order: number;
    
@@ -38,13 +41,15 @@ export interface Form {
     name: string;
     description: string;
     version: number;
-    category: string;
+    category:'kyc' | 'loan' | 'investment' | 'general';
+    // Assuming status remains 'active' | 'inactive' based on your mapping: apiForm.is_active ? 'active' : 'inactive'
     status: 'active' | 'inactive';
     fields: FormField[];
-    createdAt: string; 
-    updatedAt: string; 
+    createdAt: Date; 
+    updatedAt: Date; 
     submissionCount: number; 
 }
+// ... (FormSubmission and API interfaces remain the same) ...
 
 export interface FormSubmission {
     id: string;
@@ -116,6 +121,17 @@ const FORMS_API_URL = 'http://127.0.0.1:8001/form/api/v1/forms/';
 const SUBMISSIONS_API_URL = 'http://127.0.0.1:8001/form/api/v1/submissions/'; 
 const MY_SUBMISSIONS_API_URL = 'http://127.0.0.1:8001/form/api/v1/my_submissions/';
 
+// ⭐ New utility function to cast the API field type string to the narrow union type
+const safeCastFieldType = (type: string): FormFieldType => {
+    const validTypes: FormFieldType[] = ["number", "text", "checkbox", "date", "file", "dropdown"];
+    
+    if ((validTypes as string[]).includes(type.toLowerCase())) {
+        return type.toLowerCase() as FormFieldType;
+    }
+    
+    console.warn(`Unknown field type received: ${type}. Defaulting to 'text'.`);
+    return 'text'; 
+};
 
 export function ClientPortal({ onLogout, clientName,  accessToken }: ClientPortalProps) {
     const [activeTab, setActiveTab] = useState('available');
@@ -125,13 +141,23 @@ export function ClientPortal({ onLogout, clientName,  accessToken }: ClientPorta
     const [loading, setLoading] = useState(true); 
     const [error, setError] = useState<string | null>(null); 
     const [clientUsername, setClientUsername] = useState('Client User'); 
+    
+    const mapFormNameToCategory = (formName: string): 'kyc' | 'loan' | 'investment' | 'general' => {
+        const lowerName = formName.toLowerCase();
+    
+        if (lowerName.includes('loan')) return 'loan';
+        if (lowerName.includes('kyc')) return 'kyc';
+        if (lowerName.includes('invest')) return 'investment';
 
+        return 'general';
+    };
     
     const [showSuccessAlert, setShowSuccessAlert] = useState(false); 
 
     const [loggingOut, setLoggingOut] = useState(false);
     
     const clientSubmissions = submissions; 
+    
     useEffect(() => {
       const token = localStorage.getItem('access_token');
       
@@ -182,10 +208,10 @@ export function ClientPortal({ onLogout, clientName,  accessToken }: ClientPorta
                 name: apiForm.name,
                 description: apiForm.description,
                 version: apiForm.version,
-                category: apiForm.name, 
+                category: mapFormNameToCategory(apiForm.name) ,
                 status: apiForm.is_active ? 'active' : 'inactive',
-                createdAt:apiForm.created_at, 
-                updatedAt: apiForm.updated_at, 
+                createdAt:new Date(apiForm.created_at), 
+                updatedAt: new Date(apiForm.updated_at), 
                 submissionCount: apiForm.submissionCount, 
                 fields: apiForm.form_fields.map(apiField => {
                     const fieldName = apiField.name;
@@ -193,15 +219,17 @@ export function ClientPortal({ onLogout, clientName,  accessToken }: ClientPorta
                         id: String(apiField.id),
                         label: fieldName.charAt(0).toUpperCase() + fieldName.slice(1).replace(/_/g, ' '),
                         name: fieldName,
-                        type: apiField.type,
+                        // ⭐ FIX 3: Use the casting function for 'type'
+                        type: safeCastFieldType(apiField.type), 
                         options: apiField.options,
-                        isRequired: apiField.is_required,
+                        // This property name now matches the interface in this file
+                        isRequired: apiField.is_required, 
                         order: apiField.order,
                         isConditional: apiField.is_conditional,
                         conditionalField: apiField.conditional_field,
                         conditionalOperator: apiField.conditional_operator as FormField['conditionalOperator'],
                         conditionalValue: apiField.conditional_value,
-                    }) as unknown as FormField; 
+                    }) as FormField; // The casting to unknown is no longer needed if types are correct
                 }),
             }));
         setForms(remappedForms);
@@ -373,6 +401,7 @@ export function ClientPortal({ onLogout, clientName,  accessToken }: ClientPorta
             />
         );
     }
+// ... (rest of the component JSX remains the same) ...
 
     if (loggingOut) {
         return (

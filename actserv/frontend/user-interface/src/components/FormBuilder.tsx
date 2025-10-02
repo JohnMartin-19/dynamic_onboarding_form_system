@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Input } from './ui/input';
@@ -44,7 +44,7 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
     name: '',
     description: '',
     category: 'general' as 'kyc' | 'loan' | 'investment' | 'general',
-    status: 'draft' as 'draft' | 'active' | 'archived'
+    status: 'active' as 'active' | 'active' | 'inactive'
   });
   
   const [fields, setFields] = useState<FormField[]>([]);
@@ -68,7 +68,7 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
       name: `field_${fields.length + 1}`,
       label: `New Field ${fields.length + 1}`,
       type: 'text',
-      required: false,
+      isRequired: false,
       placeholder: ''
     };
     setFields([...fields, newField]);
@@ -152,7 +152,7 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
                     <Label className="flex items-center gap-2">
                       <IconComponent className="w-4 h-4" />
                       {field.label}
-                      {field.required && <span className="text-error">*</span>}
+                      {field.isRequired && <span className="text-error">*</span>}
                     </Label>
                     
                     {field.type === 'text' && (
@@ -390,8 +390,8 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
 
                         <div className="flex items-center space-x-2">
                           <Checkbox
-                            checked={field.required}
-                            onCheckedChange={(checked) => updateField(index, { required: !!checked })}
+                            checked={field.isRequired}
+                            onCheckedChange={(checked) => updateField(index, { isRequired: !!checked })}
                           />
                           <Label>Required field</Label>
                         </div>

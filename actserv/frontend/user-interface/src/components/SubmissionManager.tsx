@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -9,8 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { 
   Eye, 
   Check, 
-  X, 
-  Filter, 
+  X,  
   Search,
   Calendar,
   User,
@@ -26,7 +25,7 @@ interface SubmissionManagerProps {
 }
 
 export function SubmissionManager({ submissions, onUpdateSubmission }: SubmissionManagerProps) {
-  const [selectedSubmission, setSelectedSubmission] = useState<FormSubmission | null>(null);
+  const [, setSelectedSubmission] = useState<FormSubmission | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [reviewNotes, setReviewNotes] = useState('');

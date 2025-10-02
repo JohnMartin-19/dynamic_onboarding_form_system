@@ -3,7 +3,7 @@ export interface FormField {
     name: string;
     label: string;
     type: 'text' | 'number' | 'date' | 'dropdown' | 'checkbox' | 'file';
-    required: boolean;
+    isRequired: boolean;
     placeholder?: string;
     options?: string[]; // For dropdown
     validation?: {
@@ -25,7 +25,7 @@ export interface FormField {
     name: string;
     description: string;
     category: 'kyc' | 'loan' | 'investment' | 'general';
-    status: 'draft' | 'active' | 'archived';
+    status:  'active' | 'inactive';
     fields: FormField[];
     createdAt: Date;
     updatedAt: Date;
