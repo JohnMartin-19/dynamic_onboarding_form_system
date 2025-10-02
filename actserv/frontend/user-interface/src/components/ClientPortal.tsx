@@ -219,17 +219,17 @@ export function ClientPortal({ onLogout, clientName,  accessToken }: ClientPorta
                         id: String(apiField.id),
                         label: fieldName.charAt(0).toUpperCase() + fieldName.slice(1).replace(/_/g, ' '),
                         name: fieldName,
-                        // ⭐ FIX 3: Use the casting function for 'type'
+
                         type: safeCastFieldType(apiField.type), 
                         options: apiField.options,
-                        // This property name now matches the interface in this file
+
                         isRequired: apiField.is_required, 
                         order: apiField.order,
                         isConditional: apiField.is_conditional,
                         conditionalField: apiField.conditional_field,
                         conditionalOperator: apiField.conditional_operator as FormField['conditionalOperator'],
                         conditionalValue: apiField.conditional_value,
-                    }) as FormField; // The casting to unknown is no longer needed if types are correct
+                    }) as FormField; 
                 }),
             }));
         setForms(remappedForms);

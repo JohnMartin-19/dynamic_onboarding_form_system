@@ -8,14 +8,14 @@ services:
     restart: always
     environment:
       # These credentials should match your Django settings in a dev environment
-      POSTGRES_DB: onboard_db
-      POSTGRES_USER: dev_user
-      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: actserv
+      POSTGRES_USER: mburu
+      POSTGRES_PASSWORD: mburu
     ports:
-      # Expose port for local tools like DBeaver (Optional)
+      
       - "5432:5432"
     volumes:
-      # Persist data so it doesn't disappear when the container stops
+      
       - postgres_data:/var/lib/postgresql/data/
 
   # 2. Django Backend Service
@@ -27,27 +27,23 @@ services:
     restart: always
     depends_on:
       - db
-    # Map Django port to host port for easy access
+  
     ports:
       - "8000:8000"
     environment:
-      # Inject database connection variables
-      DATABASE_HOST: db         # The service name 'db' is used as the hostname
+     
+      DATABASE_HOST: db         
       DATABASE_NAME: onboard_db
       DATABASE_USER: dev_user
       DATABASE_PASSWORD: dev_password
-      # We'll use these in Django settings for local dev
       SECRET_KEY: 'your-secure-development-key'
       DEBUG: 'True'
     volumes:
-      # Bind mounts for development (optional, but helpful for live code changes)
-      # - ./backend:/app
-      # Volume for media/static files (Crucial for file uploads)
+
       - backend_media:/vol/web/media
       - backend_static:/vol/web/static
     
-    # Run migrations and create superuser/collect static when the container starts for the first time
-    # In a true dev environment, you'd run these manually, but for quick start:
+
     command: >
       sh -c "python manage.py collectstatic --noinput &&
              python manage.py makemigrations &&
@@ -55,21 +51,20 @@ services:
              gunicorn core.wsgi:application --bind 0.0.0.0:8000"
 
 
-  # 3. React Frontend Service
+  
   frontend:
     build:
       context: ./frontend/user-interface
       dockerfile: Dockerfile
     container_name: onboarding_frontend
     restart: always
-    # Expose the Nginx port to the host
+    
     ports:
-      - "3000:80" # Map host port 3000 to container port 80
+      - "3000:80" 
     depends_on:
       - backend
     environment:
-      # Ensure React knows where the backend API is (used in .env or webpack config)
-      # React will typically proxy or use the full URL: http://localhost:8000
+      
       REACT_APP_API_URL: http://localhost:8000/
 
 # Define persistent volumes
