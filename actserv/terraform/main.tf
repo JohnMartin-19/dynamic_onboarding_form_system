@@ -3,9 +3,9 @@
 # -----------------------------------------------------------------------------
 
 resource "aws_vpc" "app_vpc" {
-  cidr_block             = var.vpc_cidr
-  enable_dns_support     = true
-  enable_dns_hostnames   = true
+  cidr_block              = var.vpc_cidr
+  enable_dns_support      = true
+  enable_dns_hostnames    = true
 
   tags = {
     Name = "actserv-vpc"
@@ -19,10 +19,10 @@ data "aws_availability_zones" "available" {
 
 # Define two public and two private subnets across two Availability Zones
 resource "aws_subnet" "public" {
-  count             = length(var.public_subnet_cidrs)
-  vpc_id            = aws_vpc.app_vpc.id
-  cidr_block        = var.public_subnet_cidrs[count.index]
-  availability_zone = data.aws_availability_zones.available.names[count.index]
+  count                   = length(var.public_subnet_cidrs)
+  vpc_id                  = aws_vpc.app_vpc.id
+  cidr_block              = var.public_subnet_cidrs[count.index]
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
   map_public_ip_on_launch = true # Public subnets need public IPs
 
   tags = {
@@ -31,10 +31,10 @@ resource "aws_subnet" "public" {
 }
 
 resource "aws_subnet" "private" {
-  count             = length(var.private_subnet_cidrs)
-  vpc_id            = aws_vpc.app_vpc.id
-  cidr_block        = var.private_subnet_cidrs[count.index]
-  availability_zone = data.aws_availability_zones.available.names[count.index]
+  count                   = length(var.private_subnet_cidrs)
+  vpc_id                  = aws_vpc.app_vpc.id
+  cidr_block              = var.private_subnet_cidrs[count.index]
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
   # Private subnets do not need public IPs
 
   tags = {
@@ -47,22 +47,21 @@ resource "aws_subnet" "private" {
 # -----------------------------------------------------------------------------
 
 resource "aws_db_subnet_group" "default" {
-  name       = "actserv-db-subnet-group"
-  subnet_ids = aws_subnet.private[*].id
+  name        = "actserv-db-subnet-group"
+  subnet_ids  = aws_subnet.private[*].id
 
   tags = {
     Name = "ActServ DB Subnet Group"
   }
 }
 
-# Security Group for the DB (Allows application containers to talk to the DB)
+# Security Group for the DB (Allows application to talk to the DB)
 resource "aws_security_group" "db_access" {
   name        = "actserv-db-access"
   description = "Allow inbound traffic from app services"
   vpc_id      = aws_vpc.app_vpc.id
 
   # NOTE: Ingress rule for DB port 5432 is added later via aws_security_group_rule
-  # to specifically allow traffic from the ECS Security Group only.
 
   egress {
     from_port   = 0
@@ -77,18 +76,18 @@ resource "aws_security_group" "db_access" {
 }
 
 resource "aws_db_instance" "postgres" {
-  allocated_storage      = var.db_allocated_storage
-  storage_type           = "gp2"
-  engine                 = "postgres"
-  engine_version         = "16"
-  instance_class         = var.db_instance_class
-  identifier             = "actserv-database"
-  db_name                = var.db_name
-  username               = var.db_username
-  password               = var.db_password
-  db_subnet_group_name   = aws_db_subnet_group.default.name
-  skip_final_snapshot    = true
-  publicly_accessible    = false
+  allocated_storage       = var.db_allocated_storage
+  storage_type            = "gp2"
+  engine                  = "postgres"
+  engine_version          = "16"
+  instance_class          = var.db_instance_class
+  identifier              = "actserv-database"
+  db_name                 = var.db_name
+  username                = var.db_username
+  password                = var.db_password
+  db_subnet_group_name    = aws_db_subnet_group.default.name
+  skip_final_snapshot     = true
+  publicly_accessible     = false
 
   vpc_security_group_ids = [aws_security_group.db_access.id]
 }
@@ -109,8 +108,8 @@ resource "aws_internet_gateway" "igw" {
 
 # 3.2. EIP for NAT Gateway (Must be placed in a Public Subnet)
 resource "aws_eip" "nat_gateway_eip" {
-  domain     = "vpc"
-  depends_on = [aws_internet_gateway.igw]
+  domain      = "vpc"
+  depends_on  = [aws_internet_gateway.igw]
 
   tags = {
     Name = "actserv-nat-eip"
@@ -146,8 +145,8 @@ resource "aws_route_table" "private_rt" {
   vpc_id = aws_vpc.app_vpc.id
 
   route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat_gateway.id
+    cidr_block      = "0.0.0.0/0"
+    nat_gateway_id  = aws_nat_gateway.nat_gateway.id
   }
 
   tags = {
@@ -243,11 +242,11 @@ resource "aws_cloudfront_distribution" "cdn" {
   }
 
   default_cache_behavior {
-    target_origin_id       = "S3-React-Origin"
-    viewer_protocol_policy = "redirect-to-https"
-    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cached_methods         = ["GET", "HEAD"]
-    compress               = true
+    target_origin_id         = "S3-React-Origin"
+    viewer_protocol_policy   = "redirect-to-https"
+    allowed_methods          = ["GET", "HEAD", "OPTIONS"]
+    cached_methods           = ["GET", "HEAD"]
+    compress                 = true
     forwarded_values {
       query_string = false
       cookies {
@@ -287,89 +286,67 @@ output "frontend_url" {
 
 
 # -----------------------------------------------------------------------------
-# 5. BACKEND: IAM, ECR, ECS FARGATE
+# 5. BACKEND: IAM, EC2 INSTANCE
 # -----------------------------------------------------------------------------
 
-# Data source for current AWS region (used in CloudWatch logs)
+# Data source for current AWS region
 data "aws_region" "current" {}
 
-## 5.1 IAM ROLES
+## 5.1 IAM ROLES AND PROFILE (for EC2)
 
-# IAM Role for ECS Task Execution (Allows ECS to pull images, log to CloudWatch)
-resource "aws_iam_role" "ecs_task_execution_role" {
-  name               = "actserv-ecs-execution-role"
-  assume_role_policy = jsonencode({
+# IAM Role for EC2 Instance (Allows system commands, logging, etc.)
+resource "aws_iam_role" "ec2_instance_role" {
+  name                = "actserv-ec2-instance-role"
+  assume_role_policy  = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Action    = "sts:AssumeRole"
       Effect    = "Allow"
       Principal = {
-        Service = "ecs-tasks.amazonaws.com"
+        Service = "ec2.amazonaws.com"
       }
     }]
   })
 }
 
-# Attach standard Amazon-managed policy for execution permissions
-resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
-  role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+# Attach standard Amazon-managed policy for basic EC2 access and logs (SSM is useful)
+resource "aws_iam_role_policy_attachment" "ec2_ssm_policy" {
+  role        = aws_iam_role.ec2_instance_role.name
+  policy_arn  = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-# IAM Role for ECS Task (Application Role - Grants permissions to Django code)
-resource "aws_iam_role" "ecs_task_role" {
-  name               = "actserv-ecs-task-role"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action    = "sts:AssumeRole"
-      Effect    = "Allow"
-      Principal = {
-        Service = "ecs-tasks.amazonaws.com"
-      }
-    }]
-  })
+# IAM Instance Profile to attach the role to the EC2 instance
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "actserv-ec2-profile"
+  role = aws_iam_role.ec2_instance_role.name
 }
 
-## 5.2 ECR AND SECURITY GROUPS
 
-# Container Registry for Django Image
-resource "aws_ecr_repository" "django_repo" {
-  name                 = "actserv-django-repo"
-  image_tag_mutability = "MUTABLE"
+## 5.2 EC2 SECURITY GROUP (Replaces ECS/ALB SGs)
 
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  tags = {
-    Name = "actserv-django-repo"
-  }
-}
-
-# Security Group for the Application Load Balancer (ALB)
-resource "aws_security_group" "alb_sg" {
-  name        = "actserv-alb-sg"
-  description = "Allow inbound HTTP/S and outbound to ECS tasks"
+# Security Group for the EC2 Instance 
+resource "aws_security_group" "ec2_sg" {
+  name        = "actserv-ec2-sg"
+  description = "Allows SSH, Django app access, and outbound to DB/Internet"
   vpc_id      = aws_vpc.app_vpc.id
 
-  # Ingress: Allow HTTP from everywhere
+  # Ingress: Allow SSH from everywhere (for deployment/debugging)
   ingress {
-    from_port   = 80
-    to_port     = 80
+    from_port   = 22
+    to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Ingress: Allow HTTPS from everywhere
+  # Ingress: Allow Django app access (Port 8000) from everywhere
   ingress {
-    from_port   = 443
-    to_port     = 443
+    from_port   = 8000
+    to_port     = 8000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Egress: Allow all outbound traffic (ALB needs to talk to the ECS tasks)
+  # Egress: Allow all outbound traffic
   egress {
     from_port   = 0
     to_port     = 0
@@ -378,188 +355,132 @@ resource "aws_security_group" "alb_sg" {
   }
 
   tags = {
-    Name = "actserv-alb-sg"
+    Name = "actserv-ec2-sg"
   }
 }
 
-# Security Group for the ECS Fargate Tasks
-resource "aws_security_group" "ecs_sg" {
-  name        = "actserv-ecs-sg"
-  description = "Allows traffic from ALB and outbound to DB/Internet"
-  vpc_id      = aws_vpc.app_vpc.id
-
-  # Ingress: Allow traffic on the Django port (e.g., 8000) only from the ALB
-  ingress {
-    from_port       = 8000
-    to_port         = 8000
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb_sg.id] # Source is the ALB's SG
-  }
-
-  # Egress: Allow outbound traffic to the Internet (via NAT GW)
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "actserv-ecs-sg"
-  }
-}
-
-# Add ingress rule to DB SG, allowing traffic ONLY from the ECS SG.
-resource "aws_security_group_rule" "db_ingress_from_ecs" {
+# Add ingress rule to DB SG, allowing traffic ONLY from the new EC2 SG.
+# NOTE: This replaces the old 'db_ingress_from_ecs' rule.
+resource "aws_security_group_rule" "db_ingress_from_ec2" {
   type                     = "ingress"
   from_port                = 5432
   to_port                  = 5432
   protocol                 = "tcp"
-  source_security_group_id = aws_security_group.ecs_sg.id
+  source_security_group_id = aws_security_group.ec2_sg.id # Updated reference
   security_group_id        = aws_security_group.db_access.id
-  description              = "Allow PostgreSQL access from ECS Tasks"
+  description              = "Allow PostgreSQL access from EC2 Instance"
 }
 
-## 5.3 LOAD BALANCER (ALB)
+## 5.3 EC2 INSTANCE DEFINITION
 
-# Application Load Balancer - COMMENTED OUT DUE TO ACCOUNT LIMIT ERROR
-/*
-resource "aws_lb" "django_alb" {
-  name               = "actserv-django-alb"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = aws_subnet.public[*].id
+# Data source to fetch the latest Amazon Linux 2023 AMI
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-kernel-6.1-x86_64"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+# Key Pair for SSH access
+resource "aws_key_pair" "deployer_key" {
+  key_name   = "actserv-deployer-key"
+  public_key = var.public_key_content # NOTE: Requires var.public_key_content to be set
+}
+
+# EC2 Instance for Django Backend
+resource "aws_instance" "django_backend" {
+  ami                         = data.aws_ami.amazon_linux.id
+  instance_type               = "t3.micro"
+  key_name                    = aws_key_pair.deployer_key.key_name
+  vpc_security_group_ids      = [aws_security_group.ec2_sg.id]
+  subnet_id                   = aws_subnet.public[0].id # Place EC2 in a public subnet
+  associate_public_ip_address = true
+  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
+
+  # User data to install Docker on launch
+  user_data = <<-EOF
+              #!/bin/bash
+              # Install Docker and start service
+              sudo yum update -y
+              sudo yum install -y docker
+              sudo systemctl start docker
+              sudo usermod -a -G docker ec2-user
+              # The actual deployment (docker pull/run) must be done manually via SSH/SSM after apply.
+              EOF
 
   tags = {
-    Name = "actserv-django-alb"
-  }
-}
-*/
-
-# Target Group to route traffic to the ECS Tasks
-resource "aws_lb_target_group" "django_tg" {
-  name                 = "actserv-django-tg"
-  port                 = 8000 # The port your Django app listens on
-  protocol             = "HTTP"
-  vpc_id               = aws_vpc.app_vpc.id
-  target_type          = "ip"
-
-  health_check {
-    path                = "/health"
-    protocol            = "HTTP"
-    matcher             = "200"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
+    Name = "actserv-django-backend-ec2"
   }
 }
 
-# Listener to accept traffic on port 80 and forward to the Target Group - COMMENTED OUT
+# OUTPUT: Public IP for the EC2 backend
+output "backend_api_url" {
+    description = "The Public IP address for the Django API (EC2). Access via http://<IP>:8000"
+    value       = aws_instance.django_backend.public_ip
+}
+
+
+# -----------------------------------------------------------------------------
+# 6. CLEANUP ECS/ALB RESOURCES (DELETING)
+# -----------------------------------------------------------------------------
 /*
-resource "aws_lb_listener" "http_listener" {
-  load_balancer_arn = aws_lb.django_alb.arn
-  port              = 80
-  protocol          = "HTTP"
+  The following resources are being deleted by this change:
+    - aws_ecs_service.django_service
+    - aws_ecs_task_definition.django_task
+    - aws_ecs_cluster.django_cluster
+    - aws_ecr_repository.django_repo
+    - aws_cloudwatch_log_group.django_logs
+    - aws_iam_role.ecs_task_execution_role
+    - aws_iam_role.ecs_task_role
+    - aws_iam_role_policy_attachment.ecs_task_execution_policy
+    - aws_security_group.alb_sg (and its rules)
+    - aws_security_group.ecs_sg (and its rules, replaced by aws_security_group.ec2_sg)
+    - aws_lb.django_alb
+    - aws_lb_target_group.django_tg
+    - aws_lb_listener.http_listener
+    - aws_security_group_rule.db_ingress_from_ecs (replaced by db_ingress_from_ec2)
 
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.django_tg.arn
-  }
-}
+  By commenting out all the ECS/ALB/ECR code and replacing it with the EC2 code,
+  running 'terraform apply' will automatically destroy the old resources
+  and create the new EC2 resources.
 */
 
-# output "backend_api_url" { - COMMENTED OUT
-#   description = "The public DNS name for the Django API (ALB)."
-#   value       = aws_lb.django_alb.dns_name
-# }
+# COMMENTED OUT OLD ECS/ALB RESOURCES:
 
-
-## 5.4 ECS CLUSTER AND SERVICE
-
-# CloudWatch Log Group for ECS logs
-resource "aws_cloudwatch_log_group" "django_logs" {
-  name              = "/ecs/actserv-django"
-  retention_in_days = 7
-}
-
-# ECS Cluster
-resource "aws_ecs_cluster" "django_cluster" {
-  name = "actserv-django-cluster"
-  tags = {
-    Name = "actserv-django-cluster"
-  }
-}
-
-# ECS Task Definition (The blueprint for your Django container)
-resource "aws_ecs_task_definition" "django_task" {
-  family                   = "actserv-django-task"
-  cpu                      = "256"
-  memory                   = "512"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-  task_role_arn            = aws_iam_role.ecs_task_role.arn
-
-  container_definitions = jsonencode([
-    {
-      name      = "django-backend"
-      image     = aws_ecr_repository.django_repo.repository_url
-      cpu       = 256
-      memory    = 512
-      essential = true
-      portMappings = [
-        {
-          containerPort = 8000
-          hostPort      = 8000
-        }
-      ]
-      environment = [
-        # CRITICAL: INJECTING RDS CONNECTION DETAILS
-        { name = "DB_HOST", value = aws_db_instance.postgres.address },
-        { name = "DB_USER", value = aws_db_instance.postgres.username },
-        { name = "DB_NAME", value = var.db_name },
-        # NOTE: DB_PASSWORD should be retrieved securely via SSM Parameter or Secrets Manager.
-      ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = aws_cloudwatch_log_group.django_logs.name
-          awslogs-region        = data.aws_region.current.name
-          awslogs-stream-prefix = "ecs"
-        }
-      }
-    }
-  ])
-}
-
-
-# ECS Service (Runs and manages the desired number of tasks)
-resource "aws_ecs_service" "django_service" {
-  name            = "actserv-django-service"
-  cluster         = aws_ecs_cluster.django_cluster.id
-  task_definition = aws_ecs_task_definition.django_task.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
-
-  network_configuration {
-    security_groups  = [aws_security_group.ecs_sg.id]
-    subnets          = aws_subnet.private[*].id # CRITICAL: Must be in private subnets
-    assign_public_ip = false
-  }
 /*
-  load_balancer {
-    target_group_arn = aws_lb_target_group.django_tg.arn
-    container_name   = "django-backend"
-    container_port   = 8000
-  }
-*/
+# OLD IAM ROLES (ECS)
+resource "aws_iam_role" "ecs_task_execution_role" { ... }
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" { ... }
+resource "aws_iam_role" "ecs_task_role" { ... }
 
-  # Dependencies adjusted: Removed aws_lb_listener.http_listener
-  depends_on = [
-    aws_cloudwatch_log_group.django_logs, # Ensure logs exist before task starts
-    aws_security_group_rule.db_ingress_from_ecs, # Ensure DB access is configured
-    aws_lb_target_group.django_tg, # Ensure target group is created
-  ]
-}
+# OLD ECR
+resource "aws_ecr_repository" "django_repo" { ... }
+
+# OLD ALB SG
+resource "aws_security_group" "alb_sg" { ... }
+
+# OLD ECS SG (Replaced by aws_security_group.ec2_sg)
+resource "aws_security_group" "ecs_sg" { ... }
+
+# OLD DB RULE (Replaced by db_ingress_from_ec2)
+resource "aws_security_group_rule" "db_ingress_from_ecs" { ... }
+
+# OLD ALB RESOURCES
+resource "aws_lb" "django_alb" { ... }
+resource "aws_lb_target_group" "django_tg" { ... }
+resource "aws_lb_listener" "http_listener" { ... }
+
+# OLD CLOUDWATCH/ECS
+resource "aws_cloudwatch_log_group" "django_logs" { ... }
+resource "aws_ecs_cluster" "django_cluster" { ... }
+resource "aws_ecs_task_definition" "django_task" { ... }
+resource "aws_ecs_service" "django_service" { ... }
+*/

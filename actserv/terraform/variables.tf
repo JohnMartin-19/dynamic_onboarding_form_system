@@ -61,3 +61,11 @@ variable "db_name" {
   type        = string
   default     = "actserv" # Matches POSTGRES_DB_NAME
 }
+
+# ---------------------------------
+# EC2 Key Pair Variable (NEW)
+# ---------------------------------
+variable "public_key_content" {
+  description = "The SSH Public Key content used to access the EC2 instance."
+  type        = string
+}
