@@ -24,7 +24,7 @@ interface SignupPageProps {
   onSwitchToLogin: () => void;
 }
 
-const API_URL = 'http://127.0.0.1:8001/auth/api/v1/register/';
+const API_URL = 'http://54.226.123.10:8000/auth/api/v1/register/';
 
 export function SignupPage({ onSignup, onSwitchToLogin }: SignupPageProps) {
   const [formData, setFormData] = useState({
