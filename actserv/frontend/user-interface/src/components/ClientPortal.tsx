@@ -117,9 +117,9 @@ interface ClientPortalProps {
 }
 
 
-const FORMS_API_URL = 'http://127.0.0.1:8001/form/api/v1/forms/';
-const SUBMISSIONS_API_URL = 'http://127.0.0.1:8001/form/api/v1/submissions/'; 
-const MY_SUBMISSIONS_API_URL = 'http://127.0.0.1:8001/form/api/v1/my_submissions/';
+const FORMS_API_URL = 'http://54.226.123.10:8000/form/api/v1/forms/';
+const SUBMISSIONS_API_URL = 'http://54.226.123.10:8000/form/api/v1/submissions/'; 
+const MY_SUBMISSIONS_API_URL = 'http://54.226.123.10:8000/form/api/v1/my_submissions/';
 
 // ⭐ New utility function to cast the API field type string to the narrow union type
 const safeCastFieldType = (type: string): FormFieldType => {

@@ -24,8 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-insecure-fallback-key')
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')], default=[])
+# Note: Adding default=[] prevents crashes if the variable is not set locally.
 
-ALLOWED_HOSTS = ['*']
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5174",  
     "http://127.0.0.1:5174",
@@ -108,7 +109,7 @@ DATABASES = {
 }
 
 # Add this setting for Docker to allow connections from the frontend service
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend'] 
+# ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend'] 
 # 'backend' is the service name used in docker-compose, allowing internal container communication
 
 # Static and Media files for Docker volumes

@@ -24,10 +24,10 @@ interface LoginPageProps {
 }
 
 // 1. Define the API endpoint for login
-const API_URL = 'http://127.0.0.1:8001/auth/api/v1/login/';
+const API_URL = 'http://54.226.123.10:8000/auth/api/v1/login/';
 
 // 2. Define the Admin Portal URL
-const ADMIN_PORTAL_URL = 'http://127.0.0.1:8001/admin/login/?next=/admin/';
+const ADMIN_PORTAL_URL = 'http://54.226.123.10:8000/admin/login/?next=/admin/';
 
 export function LoginPage({ onLogin, onSwitchToSignup, isAdminMode = false, onBackToLogin }: LoginPageProps) {
   // --- CHANGE 1: Use 'username' state instead of 'email' ---
