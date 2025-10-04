@@ -427,16 +427,37 @@ output "backend_api_url" {
     value       = aws_instance.django_backend.public_ip
 }
 
+resource "aws_iam_role_policy_attachment" "ec2_ecr_read_policy" {
+  role        = aws_iam_role.ec2_instance_role.name
+  policy_arn  = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
 
 # -----------------------------------------------------------------------------
 # 6. CLEANUP ECS/ALB RESOURCES (DELETING)
 # -----------------------------------------------------------------------------
+
+# *** TEMPORARY: Re-add ECR with force_delete to resolve 'RepositoryNotEmptyException' ***
+# Terraform will see this resource is in the state and destroy it completely.
+resource "aws_ecr_repository" "django_repo" {
+  name                 = "actserv-django-repo"
+  # CRITICAL: Set force_delete to true to allow destruction of non-empty repository
+  force_delete         = true 
+
+  image_tag_mutability = "MUTABLE"
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Name = "actserv-django-repo"
+  }
+}
 /*
-  The following resources are being deleted by this change:
+  The following resources were either already destroyed or will be destroyed now:
     - aws_ecs_service.django_service
     - aws_ecs_task_definition.django_task
     - aws_ecs_cluster.django_cluster
-    - aws_ecr_repository.django_repo
+    - aws_ecr_repository.django_repo (DELETED VIA FORCE_DELETE BLOCK ABOVE)
     - aws_cloudwatch_log_group.django_logs
     - aws_iam_role.ecs_task_execution_role
     - aws_iam_role.ecs_task_role
@@ -447,22 +468,14 @@ output "backend_api_url" {
     - aws_lb_target_group.django_tg
     - aws_lb_listener.http_listener
     - aws_security_group_rule.db_ingress_from_ecs (replaced by db_ingress_from_ec2)
-
-  By commenting out all the ECS/ALB/ECR code and replacing it with the EC2 code,
-  running 'terraform apply' will automatically destroy the old resources
-  and create the new EC2 resources.
 */
 
 # COMMENTED OUT OLD ECS/ALB RESOURCES:
-
 /*
 # OLD IAM ROLES (ECS)
 resource "aws_iam_role" "ecs_task_execution_role" { ... }
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" { ... }
 resource "aws_iam_role" "ecs_task_role" { ... }
-
-# OLD ECR
-resource "aws_ecr_repository" "django_repo" { ... }
 
 # OLD ALB SG
 resource "aws_security_group" "alb_sg" { ... }

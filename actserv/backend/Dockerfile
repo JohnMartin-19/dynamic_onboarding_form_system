@@ -1,4 +1,3 @@
-
 # a lightweight official python image to save space ofc
 FROM python:3.11-slim
 
@@ -26,4 +25,5 @@ RUN chmod -R 755 /vol/web
 EXPOSE 8000
 
 
-CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000"]
+# CORRECTED: Use the full path and ensure proper argument order for gunicorn
+CMD ["/usr/local/bin/gunicorn", "--bind", "0.0.0.0:8000", "core.wsgi:application"]

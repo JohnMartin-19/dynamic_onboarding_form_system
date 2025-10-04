@@ -68,4 +68,5 @@ variable "db_name" {
 variable "public_key_content" {
   description = "The SSH Public Key content used to access the EC2 instance."
   type        = string
+  
 }
