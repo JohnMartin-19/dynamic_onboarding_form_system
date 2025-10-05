@@ -182,11 +182,11 @@ class SubmissionCreateListAPIView(APIView):
                                 field=form_field_instance,
                                 file=uploaded_file
                             )
-                    notify_admin_of_submission.delay(
-                        submission_id=submission.id,
-                        form_name=submission.form.name, 
-                        client_email=request.user.email
-                    )
+                    # notify_admin_of_submission.delay(
+                    #     submission_id=submission.id,
+                    #     form_name=submission.form.name, 
+                    #     client_email=request.user.email
+                    # )
                            
                     return Response(
                         {'message': 'Form submitted successfully', 'data': serializer.data}, 
@@ -197,7 +197,7 @@ class SubmissionCreateListAPIView(APIView):
                 
                 return Response(
                     {'message': 'Failed to submit form due to internal validation error.', 
-                     'data': {'form_id': [f"Object does not exist or invalid data: {str(e)}"]}}, # <-- ADDED 'data' KEY for error details
+                     'data': serializer.errors}, 
                     status=status.HTTP_400_BAD_REQUEST 
                 )
         return Response(

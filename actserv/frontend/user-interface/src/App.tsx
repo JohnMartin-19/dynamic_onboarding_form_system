@@ -162,13 +162,13 @@ export default function App() {
 
     return (
       <div className="min-h-screen bg-neutral-gray">
-        (
+        
           <ClientPortal 
               onLogout={handleLogout}
               clientName={displayName}
               clientEmail={user.email} 
               accessToken={''}          />
-        )
+        
       </div>
     );
   }
